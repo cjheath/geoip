@@ -1,3 +1,7 @@
+== 0.7.0 2008-05-03
+
+* Added Hez Ronningen's patch for using the ISP lookup data file
+
 == 0.5.0 2007-10-24
 
 * 1 major enhancement:
