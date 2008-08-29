@@ -41,6 +41,7 @@ $:.unshift File.dirname(__FILE__)
 # See www.maxmind.com for more information.
 #
 #=end
+require 'thread'  # Needed for Mutex
 
 require 'socket'
 
@@ -421,11 +422,13 @@ class GeoIP
 
     public
     attr_reader :databaseType
+
     # Open the GeoIP database and determine the file format version
     #
     # +filename+ is a String holding the path to the GeoIP.dat file
     # +options+ is an integer holding caching flags (unimplemented)
     def initialize(filename, flags = 0)
+        @mutex = Mutex.new
         @flags = flags
         @databaseType = GEOIP_COUNTRY_EDITION
         @record_length = STANDARD_RECORD_LENGTH
@@ -525,8 +528,11 @@ class GeoIP
     private
 
     def read_city(pos, hostname = '', ip = '')
-        @file.seek(pos + (2*@record_length-1) * @databaseSegments[0])
-        return nil if((record = @file.read(FULL_RECORD_LENGTH)).nil?)
+        record = ""
+        @mutex.synchronize {
+            @file.seek(pos + (2*@record_length-1) * @databaseSegments[0])
+            return nil unless record = @file.read(FULL_RECORD_LENGTH)
+        }
 
         # The country code is the first byte:
         code = record[0]
@@ -632,22 +638,25 @@ class GeoIP
     # Return the ISP name
     #
     def isp(hostname)
-      ip = hostname
-      if ip.kind_of?(String) && ip !~ /^[0-9.]*$/
-          # Lookup IP address, we were given a name
-          ip = IPSocket.getaddress(hostname)
-      end
+        ip = hostname
+        if ip.kind_of?(String) && ip !~ /^[0-9.]*$/
+            # Lookup IP address, we were given a name
+            ip = IPSocket.getaddress(hostname)
+        end
 
-      # Convert numeric IP address to an integer
-      ipnum = iptonum(ip)
-      if @databaseType != GEOIP_ISP_EDITION then
-          throw "Invalid GeoIP database type, can't look up Organization/ISP by IP"
-      end
-      pos = seek_record(ipnum);
-      @file.seek(pos + (2*@record_length-1) * @databaseSegments[0])
-      record = @file.read(MAX_ORG_RECORD_LENGTH)
-      record = record.sub(/\000.*/, '')
-      record
+        # Convert numeric IP address to an integer
+        ipnum = iptonum(ip)
+        if @databaseType != GEOIP_ISP_EDITION
+            throw "Invalid GeoIP database type, can't look up Organization/ISP by IP"
+        end
+        pos = seek_record(ipnum);
+        record = ""
+        @mutex.synchronize {
+            @file.seek(pos + (2*@record_length-1) * @databaseSegments[0])
+            record = @file.read(MAX_ORG_RECORD_LENGTH)
+        }
+        record = record.sub(/\000.*/, '')
+        record
     end
 
     # Search a ISP GeoIP database for the specified host, returning the organization
@@ -689,8 +698,10 @@ class GeoIP
         offset = 0
         mask = 0x80000000
         31.downto(0) { |depth|
-            @file.seek(@record_length * 2 * offset);
-            buf = @file.read(@record_length * 2);
+            buf = @mutex.synchronize {
+                @file.seek(@record_length * 2 * offset);
+                @file.read(@record_length * 2);
+            }
             buf.slice!(0...@record_length) if ((ipnum & mask) != 0)
             offset = le_to_ui(buf[0...@record_length].unpack("C*"))
             return offset if (offset >= @databaseSegments[0])

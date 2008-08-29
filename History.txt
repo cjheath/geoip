@@ -1,3 +1,7 @@
+== 0.8.0 2008-08-29
+
+* Added Mutex protection around file I/O for thread safety
+
 == 0.7.0 2008-05-03
 
 * Added Hez Ronningen's patch for using the ISP lookup data file
