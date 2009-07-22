@@ -17,7 +17,7 @@ Gem::Specification.new do |s|
   s.require_paths = ["lib"]
   s.rubyforge_project = %q{geoip}
   s.rubygems_version = %q{1.3.1}
-  s.summary = %q{A pure ruby geoip interface for MaxMind.com .dat files}}
+  s.summary = %q{A pure ruby geoip interface for MaxMind.com .dat files}
   s.test_files = ["test/test_geoip.rb", "test/test_helper.rb"]
 
   if s.respond_to? :specification_version then
