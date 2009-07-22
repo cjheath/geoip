@@ -473,11 +473,6 @@ class GeoIP
         end
     end
 
-    # Close the file handle for the GeoIP data file.
-    def close
-      @file.close
-    end
-
     # Search the GeoIP database for the specified host, returning country info
     #
     # +hostname+ is a String holding the host's DNS name or numeric IP address.
