@@ -411,6 +411,7 @@ class GeoIP
     STRUCTURE_INFO_MAX_SIZE = 20
     DATABASE_INFO_MAX_SIZE = 100
     MAX_ORG_RECORD_LENGTH = 300
+    MAX_ASN_RECORD_LENGTH = 300 # unverified
     US_OFFSET = 1
     CANADA_OFFSET = 677
     WORLD_OFFSET = 1353
@@ -658,6 +659,40 @@ class GeoIP
         record = record.sub(/\000.*/, '')
         record
     end
+    
+    # Search a ASN GeoIP database for the specified host, returning the AS number + description
+    #
+    # +hostname+ is a String holding the host's DNS name or numeric IP address.
+    # Return the AS number + description
+    #
+    # Source:
+    # http://geolite.maxmind.com/download/geoip/database/asnum/GeoIPASNum.dat.gz
+    #   
+    def asn(hostname)
+        ip = hostname
+        if ip.kind_of?(String) && ip !~ /^[0-9.]*$/
+            # Lookup IP address, we were given a name
+            ip = IPSocket.getaddress(hostname)
+        end
+
+        # Convert numeric IP address to an integer
+        ipnum = iptonum(ip)
+        if (@databaseType != GEOIP_ASNUM_EDITION)
+            throw "Invalid GeoIP database type, can't look up ASN by IP"
+        end
+        pos = seek_record(ipnum);
+        record = ""
+        @mutex.synchronize {
+          @file.seek(pos + (2*@record_length-1) * @databaseSegments[0])
+          record = @file.read(MAX_ASN_RECORD_LENGTH)
+        }
+        record = record.sub(/\000.*/, '')
+        
+        if record =~ /^(AS\d+)\s(.*)$/
+          # AS####, Description 
+          return [$1, $2]
+        end
+    end
 
     # Search a ISP GeoIP database for the specified host, returning the organization
     #
@@ -684,6 +719,7 @@ class GeoIP
     end
 
     private
+      
     def iptonum(ip)     # Convert numeric IP address to integer
         if ip.kind_of?(String) &&
             ip =~ /^([0-9]+)\.([0-9]+)\.([0-9]+)\.([0-9]+)$/

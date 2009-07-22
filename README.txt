@@ -19,11 +19,16 @@ require 'geoip'
 GeoIP.new('GeoIP.dat').country("www.netscape.sk")
 => ["www.netscape.sk", "217.67.16.35", 196, "SK", "SVK", "Slovakia", "EU"]
 
+GeoIP.new('GeoIPASNum.dat').asn("www.fsb.ru")
+=> ["AS8342", "RTComm.RU Autonomous System"]
+
 == REQUIREMENTS:
 
 You need at least the free GeoIP.dat, for which the last known download
 location is <http://www.maxmind.com/download/geoip/database/GeoIP.dat.gz>,
 or the city database from <http://www.maxmind.com/app/geolitecity>.
+The ASN database location is
+<http://geolite.maxmind.com/download/geoip/database/asnum/GeoIPASNum.dat.gz>.
 
 This API requires the file to be decompressed for searching. Other versions
 of this database are available for purchase which contain more detailed
@@ -32,7 +37,8 @@ See www.maxmind.com for more information.
 
 == INSTALL:
 
-sudo gem install geoip
+sudo gem sources -a http://gems.github.com (you only have to do this once)
+sudo gem install rmoriz-geoip
 
 == LICENSE:
 
