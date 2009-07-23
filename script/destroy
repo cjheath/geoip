@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-APP_ROOT = File.join(File.dirname(__FILE__), '..')
+APP_ROOT = File.expand_path(File.join(File.dirname(__FILE__), '..'))
 
 begin
   require 'rubigen'
@@ -10,5 +10,5 @@ end
 require 'rubigen/scripts/destroy'
 
 ARGV.shift if ['--help', '-h'].include?(ARGV[0])
-RubiGen::Base.use_component_sources! [:rubygems, :newgem, :newgem_theme]
+RubiGen::Base.use_component_sources! [:rubygems, :newgem, :newgem_theme, :test_unit]
 RubiGen::Scripts::Destroy.new.run(ARGV)

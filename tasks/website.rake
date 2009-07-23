@@ -1,7 +1,7 @@
 desc 'Generate website files'
 task :website_generate => :ruby_env do
   (Dir['website/**/*.txt'] - Dir['website/version*.txt']).each do |txt|
-    sh %{ #{RUBY_APP} script/txt2html #{txt} > #{txt.gsub(/txt$/,'html')} }
+    sh %{ #{ENV['RUBY_APP']||'ruby'} script/txt2html #{txt} > #{txt.gsub(/txt$/,'html')} }
   end
 end
 

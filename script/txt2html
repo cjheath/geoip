@@ -11,9 +11,9 @@ end
 require 'redcloth'
 require 'syntax/convertors/html'
 require 'erb'
-require File.dirname(__FILE__) + '/../lib/geoip/version.rb'
+require File.dirname(__FILE__) + '/../lib/geoip.rb'
 
-version  = Geoip::VERSION::STRING
+version  = GeoIP::VERSION
 download = 'http://rubyforge.org/projects/geoip'
 
 class Fixnum

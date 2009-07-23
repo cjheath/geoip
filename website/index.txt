@@ -1,6 +1,6 @@
 h1. geoip
 
-h2. &#x2192; 'Geographic info for an IP address'
+h2. 'Geographic info for an IP address'
 
 h2. What
 

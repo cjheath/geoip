@@ -42,10 +42,10 @@ $:.unshift File.dirname(__FILE__)
 #
 #=end
 require 'thread'  # Needed for Mutex
-
 require 'socket'
 
 class GeoIP
+    VERSION = "0.8.2"
     private
     CountryCode = [
         "--","AP","EU","AD","AE","AF","AG","AI","AL","AM","AN",
