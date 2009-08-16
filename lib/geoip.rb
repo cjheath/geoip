@@ -45,7 +45,7 @@ require 'thread'  # Needed for Mutex
 require 'socket'
 
 class GeoIP
-    VERSION = "0.8.2"
+    VERSION = "0.8.3"
     private
     CountryCode = [
         "--","AP","EU","AD","AE","AF","AG","AI","AL","AM","AN",
@@ -437,7 +437,7 @@ class GeoIP
         @file.seek(-3, IO::SEEK_END)
         0.upto(STRUCTURE_INFO_MAX_SIZE-1) { |i|
             if @file.read(3) == "\xFF\xFF\xFF"
-                @databaseType = @file.getc
+                @databaseType = @file.getbyte
                 @databaseType -= 105 if @databaseType >= 106
 
                 if (@databaseType == GEOIP_REGION_EDITION_REV0)
