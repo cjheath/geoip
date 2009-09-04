@@ -45,7 +45,7 @@ require 'thread'  # Needed for Mutex
 require 'socket'
 
 class GeoIP
-    VERSION = "0.8.3"
+    VERSION = "0.8.4"
     private
     CountryCode = [
         "--","AP","EU","AD","AE","AF","AG","AI","AL","AM","AN",
@@ -437,7 +437,7 @@ class GeoIP
         @file.seek(-3, IO::SEEK_END)
         0.upto(STRUCTURE_INFO_MAX_SIZE-1) { |i|
             if @file.read(3) == "\xFF\xFF\xFF"
-                @databaseType = @file.getbyte
+                @databaseType = @file.respond_to?(:getbyte) ? @file.getbyte : @file.getc
                 @databaseType -= 105 if @databaseType >= 106
 
                 if (@databaseType == GEOIP_REGION_EDITION_REV0)
@@ -496,6 +496,7 @@ class GeoIP
         if ip.kind_of?(String) && ip !~ /^[0-9.]*$/
             # Lookup IP address, we were given a name
             ip = IPSocket.getaddress(hostname)
+            ip = '0.0.0.0' if ip == '::1'
         end
 
         # Convert numeric IP address to an integer
@@ -537,6 +538,7 @@ class GeoIP
 
         # The country code is the first byte:
         code = record[0]
+        code = code.ord if code.respond_to?(:ord)
         record = record[1..-1]
         @iter_pos += 1 unless @iter_pos.nil?
 
@@ -621,6 +623,7 @@ class GeoIP
         if ip.kind_of?(String) && ip !~ /^[0-9.]*$/
             # Lookup IP address, we were given a name
             ip = IPSocket.getaddress(hostname)
+            ip = '0.0.0.0' if ip == '::1'
         end
 
         # Convert numeric IP address to an integer
@@ -643,6 +646,7 @@ class GeoIP
         if ip.kind_of?(String) && ip !~ /^[0-9.]*$/
             # Lookup IP address, we were given a name
             ip = IPSocket.getaddress(hostname)
+            ip = '0.0.0.0' if ip == '::1'
         end
 
         # Convert numeric IP address to an integer
@@ -673,6 +677,7 @@ class GeoIP
         if ip.kind_of?(String) && ip !~ /^[0-9.]*$/
             # Lookup IP address, we were given a name
             ip = IPSocket.getaddress(hostname)
+            ip = '0.0.0.0' if ip == '::1'
         end
 
         # Convert numeric IP address to an integer
