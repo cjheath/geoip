@@ -691,7 +691,7 @@ class GeoIP
           @file.seek(pos + (2*@record_length-1) * @databaseSegments[0])
           record = @file.read(MAX_ASN_RECORD_LENGTH)
         }
-        record = record.sub(/\000.*/, '')
+        record = record.sub(/\000.*/n, '')
         
         if record =~ /^(AS\d+)\s(.*)$/
           # AS####, Description 
