@@ -633,6 +633,7 @@ class GeoIP
             throw "Invalid GeoIP database type, can't look up City by IP"
         end
         pos = seek_record(ipnum);
+        return nil if pos == @databaseSegments[0]
         read_city(pos, hostname, ip)
     end
 
