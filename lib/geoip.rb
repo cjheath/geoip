@@ -45,7 +45,7 @@ require 'thread'  # Needed for Mutex
 require 'socket'
 
 class GeoIP
-    VERSION = "0.8.4"
+    VERSION = "0.8.5"
     private
     CountryCode = [
         "--","AP","EU","AD","AE","AF","AG","AI","AL","AM","AN",
