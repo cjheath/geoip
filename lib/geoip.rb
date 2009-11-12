@@ -43,9 +43,14 @@ $:.unshift File.dirname(__FILE__)
 #=end
 require 'thread'  # Needed for Mutex
 require 'socket'
+begin
+  require 'io/extra' # for IO.pread
+rescue LoadError
+  # oh well, hope they're not forking after initializing
+end
 
 class GeoIP
-    VERSION = "0.8.5"
+    VERSION = "0.8.6"
     private
     CountryCode = [
         "--","AP","EU","AD","AE","AF","AG","AI","AL","AM","AN",
@@ -429,7 +434,7 @@ class GeoIP
     # +filename+ is a String holding the path to the GeoIP.dat file
     # +options+ is an integer holding caching flags (unimplemented)
     def initialize(filename, flags = 0)
-        @mutex = Mutex.new
+        @mutex = IO.respond_to?(:pread) ? false : Mutex.new
         @flags = flags
         @databaseType = GEOIP_COUNTRY_EDITION
         @record_length = STANDARD_RECORD_LENGTH
@@ -530,11 +535,9 @@ class GeoIP
     private
 
     def read_city(pos, hostname = '', ip = '')
-        record = ""
-        @mutex.synchronize {
-            @file.seek(pos + (2*@record_length-1) * @databaseSegments[0])
-            return nil unless record = @file.read(FULL_RECORD_LENGTH)
-        }
+        off = pos + (2*@record_length-1) * @databaseSegments[0]
+        record = atomic_read(FULL_RECORD_LENGTH, off)
+        return nil unless record && record.size == FULL_RECORD_LENGTH
 
         # The country code is the first byte:
         code = record[0]
@@ -656,11 +659,8 @@ class GeoIP
             throw "Invalid GeoIP database type, can't look up Organization/ISP by IP"
         end
         pos = seek_record(ipnum);
-        record = ""
-        @mutex.synchronize {
-            @file.seek(pos + (2*@record_length-1) * @databaseSegments[0])
-            record = @file.read(MAX_ORG_RECORD_LENGTH)
-        }
+        off = pos + (2*@record_length-1) * @databaseSegments[0]
+        record = atomic_read(MAX_ORG_RECORD_LENGTH, off)
         record = record.sub(/\000.*/n, '')
         record
     end
@@ -687,11 +687,8 @@ class GeoIP
             throw "Invalid GeoIP database type, can't look up ASN by IP"
         end
         pos = seek_record(ipnum);
-        record = ""
-        @mutex.synchronize {
-          @file.seek(pos + (2*@record_length-1) * @databaseSegments[0])
-          record = @file.read(MAX_ASN_RECORD_LENGTH)
-        }
+        off = pos + (2*@record_length-1) * @databaseSegments[0]
+        record = atomic_read(MAX_ASN_RECORD_LENGTH, off)
         record = record.sub(/\000.*/n, '')
         
         if record =~ /^(AS\d+)\s(.*)$/
@@ -740,10 +737,8 @@ class GeoIP
         offset = 0
         mask = 0x80000000
         31.downto(0) { |depth|
-            buf = @mutex.synchronize {
-                @file.seek(@record_length * 2 * offset);
-                @file.read(@record_length * 2);
-            }
+            off = @record_length * 2 * offset
+            buf = atomic_read(@record_length * 2, off)
             buf.slice!(0...@record_length) if ((ipnum & mask) != 0)
             offset = le_to_ui(buf[0...@record_length].unpack("C*"))
             return offset if (offset >= @databaseSegments[0])
@@ -761,6 +756,22 @@ class GeoIP
     # Same for little-endian
     def le_to_ui(s)
         be_to_ui(s.reverse)
+    end
+
+    # reads +length+ bytes from +offset+ as atomically as possible
+    # if IO.pread is available, it'll use that (making it both multithread
+    # and multiprocess-safe).  Otherwise we'll use a mutex to synchronize
+    # access (only providing protection against multiple threads, but not
+    # file descriptors shared across multiple processes).
+    def atomic_read(length, offset)
+        if @mutex
+            @mutex.synchronize {
+                @file.seek(offset)
+                @file.read(length)
+            }
+        else
+            IO.pread(@file.fileno, length, offset)
+        end
     end
 end
 
