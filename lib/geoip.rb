@@ -636,6 +636,13 @@ class GeoIP
             throw "Invalid GeoIP database type, can't look up City by IP"
         end
         pos = seek_record(ipnum);
+        # This next statement was added to MaxMind's C version after it was rewritten in Ruby.
+        # It prevents unassigned IP addresses from returning bogus data.  There was concern over
+        # whether the changes to an application's behaviour were always correct, but this has been
+        # tested using an exhaustive search of the top 16 bits of the IP address space.  The records
+        # where the change takes effect contained *no* valid data.  If you're concerned, email me,
+        # and I'll send you the test program so you can test whatever IP range you think is causing
+        # problems, as I don't care to undertake an exhaustive search of the 32-bit space.
         return nil if pos == @databaseSegments[0]
         read_city(pos, hostname, ip)
     end
