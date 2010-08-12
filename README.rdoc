@@ -1,7 +1,6 @@
 = geoip
 
-* Forked from http://github.com/cjheath/geoip
-* Modified by Nicholas Young: http://github.com/nicholaswyoung/geoip
+http://github.com/cjheath/geoip
 
 == DESCRIPTION:
 
