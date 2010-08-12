@@ -30,6 +30,10 @@ h2. Example
     => ["www.netscape.sk", "217.67.16.35", 196, "SK", "SVK", "Slovakia", "EU"]
 
 
+    GeoIP.new('GeoCity.dat').city('github.com')
+    => ["github.com", "207.97.227.239", "US", "USA", "United States", "NA", "CA", "San Francisco", "94110", 37.7484, -122.4156, "America/Los_Angeles", 807, 415]
+
+
     GeoIP.new('GeoIPASNum.dat').asn("www.fsb.ru")
     => ["AS8342", "RTComm.RU Autonomous System"]
     </pre>
