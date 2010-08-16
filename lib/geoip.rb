@@ -50,7 +50,7 @@ rescue LoadError
 end
 
 class GeoIP
-    VERSION = "0.8.6"
+    VERSION = "0.8.7"
     private
     CountryCode = [
         "--","AP","EU","AD","AE","AF","AG","AI","AL","AM","AN",
@@ -760,6 +760,7 @@ class GeoIP
     # * The latitude
     # * The longitude
     # * The dma_code and area_code, if available (REV1 City database)
+    # * The timezone name, if known
     private
 
     def read_city(pos, hostname = '', ip = '')
@@ -813,6 +814,8 @@ class GeoIP
             area_code = dmaarea_combo % 1000;
             us_area_codes = [ dma_code, area_code ]
             @iter_pos += 3 unless @iter_pos.nil?
+        else
+            us_area_codes = [ nil, nil ]  # Ensure that TimeZone is always at the same offset
         end
 
         [   hostname,                   # Requested hostname
@@ -826,8 +829,9 @@ class GeoIP
             postal_code,                # Postal code
             latitude,
             longitude,
-            TimeZone["#{CountryCode[code]}#{region}"] || TimeZone["#{CountryCode[code]}"] || ""
-        ] + us_area_codes
+        ] +
+            us_area_codes +
+            [ TimeZone["#{CountryCode[code]}#{region}"] || TimeZone["#{CountryCode[code]}"] ]
     end
 
     public
