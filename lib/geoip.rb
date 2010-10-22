@@ -669,7 +669,7 @@ class GeoIP
         @file = File.open(filename, 'rb')
         @file.seek(-3, IO::SEEK_END)
         0.upto(STRUCTURE_INFO_MAX_SIZE-1) { |i|
-            if @file.read(3) == "\xFF\xFF\xFF"
+            if @file.read(3).bytes.all?{|byte| 255 == byte}
                 @databaseType = @file.respond_to?(:getbyte) ? @file.getbyte : @file.getc
                 @databaseType -= 105 if @databaseType >= 106
 
