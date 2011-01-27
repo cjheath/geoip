@@ -20,8 +20,8 @@ This release adds support for timezone names, thanks to Tonni Aagesen.
   => ["www.atlantis.sk", "217.67.18.26", "SK", "SVK", "Slovakia", "EU", "02", "Bratislava", "", 48.15, 17.1167, nil, nil, "Europe/Bratislava"]
 
   Returned values are the requested hostname, the IP address as a dotted quad,
-  Maxmind's country code, the ISO3166-1 country code, the ISO3166-2 country code,
-  the ISO3166 country name, and the continent code.
+  Maxmind's country code, the ISO 3166-1 alpha-2 country code, the ISO 3166-1 alpha-3 country code,
+  the ISO 3166 country name, and the continent code.
 
   GeoIP.new('GeoCity.dat').city('github.com')
   => ["github.com", "207.97.227.239", "US", "USA", "United States", "NA", "CA", "San Francisco", "94110", 37.7484, -122.4156, 807, 415, "America/Los_Angeles"]

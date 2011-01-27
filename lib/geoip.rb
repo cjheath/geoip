@@ -714,9 +714,9 @@ class GeoIP
     # * The host or IP address string as requested
     # * The IP address string after looking up the host
     # * The GeoIP country-ID as an integer
-    # * The ISO3166-1 two-character country code
-    # * The ISO3166-2 three-character country code
-    # * The ISO3166 English-language name of the country
+    # * The two-character country code (ISO 3166-1 alpha-2)
+    # * The three-character country code (ISO 3166-1 alpha-3)
+    # * The ISO 3166 English-language name of the country
     # * The two-character continent code
     #
     def country(hostname)
@@ -743,9 +743,9 @@ class GeoIP
         [   hostname,                   # Requested hostname
             ip,                         # Ip address as dotted quad
             code,                       # GeoIP's country code
-            CountryCode[code],          # ISO3166-1 code
-            CountryCode3[code],         # ISO3166-2 code
-            CountryName[code],          # Country name, per IS03166
+            CountryCode[code],          # ISO 3166-1 alpha-2
+            CountryCode3[code],         # ISO 3166-1 alpha-3
+            CountryName[code],          # Country name, per ISO 3166
             CountryContinent[code] ]    # Continent code.
     end
 
@@ -822,9 +822,9 @@ class GeoIP
 
         [   hostname,                   # Requested hostname
             ip,                         # Ip address as dotted quad
-            CountryCode[code],          # ISO3166-1 code
-            CountryCode3[code],         # ISO3166-2 code
-            CountryName[code],          # Country name, per IS03166
+            CountryCode[code],          # ISO 3166-1 alpha-2 code
+            CountryCode3[code],         # ISO 3166-1 alpha-3 code
+            CountryName[code],          # Country name, per ISO 3166
             CountryContinent[code],     # Continent code.
             region,                     # Region name
             city,                       # City name
@@ -845,9 +845,9 @@ class GeoIP
     # * The host or IP address string as requested
     # * The IP address string after looking up the host
     # * The GeoIP country-ID as an integer
-    # * The ISO3166-1 two-character country code
-    # * The ISO3166-2 three-character country code
-    # * The ISO3166 English-language name of the country
+    # * The two-character country code (ISO 3166-1 alpha-2)
+    # * The three-character country code (ISO 3166-1 alpha-3)
+    # * The ISO 3166 English-language name of the country
     # * The two-character continent code
     # * The region name
     # * The city name
