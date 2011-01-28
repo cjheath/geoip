@@ -749,20 +749,27 @@ class GeoIP
             CountryContinent[code] ]    # Continent code.
     end
 
+    private
+
     # Search the GeoIP database for the specified host, returning city info
     #
     # +hostname+ is a String holding the host's DNS name or numeric IP address
-    # Return an array of twelve or fourteen elements:
-    # * All elements from the country query
+    # Return an array of fourteen elements:
+    # * The host or IP address string as requested
+    # * The IP address string after looking up the host
+    # * The two-character country code (ISO 3166-1 alpha-2)
+    # * The three-character country code (ISO 3166-1 alpha-3)
+    # * The ISO 3166 English-language name of the country
+    # * The two-character continent code
     # * The region (state or territory) name
     # * The city name
     # * The postal code (zipcode)
     # * The latitude
     # * The longitude
-    # * The dma_code and area_code, if available (REV1 City database)
+    # * The dma_code, if available (REV1 City database)
+    # * The area_code, if available (REV1 City database)
     # * The timezone name, if known
-    private
-
+    #
     def read_city(pos, hostname = '', ip = '')
         off = pos + (2*@record_length-1) * @databaseSegments[0]
         record = atomic_read(FULL_RECORD_LENGTH, off)
@@ -841,20 +848,21 @@ class GeoIP
     # Search the GeoIP database for the specified host, returning city info.
     #
     # +hostname+ is a String holding the host's DNS name or numeric IP address.
-    # Return an array of twelve or fourteen elements:
+    # Return an array of fourteen elements:
     # * The host or IP address string as requested
     # * The IP address string after looking up the host
-    # * The GeoIP country-ID as an integer
     # * The two-character country code (ISO 3166-1 alpha-2)
     # * The three-character country code (ISO 3166-1 alpha-3)
     # * The ISO 3166 English-language name of the country
     # * The two-character continent code
-    # * The region name
+    # * The region (state or territory) name
     # * The city name
-    # * The postal code
+    # * The postal code (zipcode)
     # * The latitude
     # * The longitude
-    # * The USA dma_code and area_code, if available (REV1 City database)
+    # * The dma_code, if available (REV1 City database)
+    # * The area_code, if available (REV1 City database)
+    # * The timezone name, if known
     #
     def city(hostname)
         ip = hostname
