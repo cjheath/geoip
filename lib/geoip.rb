@@ -50,7 +50,7 @@ rescue LoadError
 end
 
 class GeoIP
-    VERSION = "0.8.9"
+    VERSION = "0.9.0"
     private
     CountryCode = [
         "--","AP","EU","AD","AE","AF","AG","AI","AL","AM","AN",
@@ -710,14 +710,19 @@ class GeoIP
     # Search the GeoIP database for the specified host, returning country info
     #
     # +hostname+ is a String holding the host's DNS name or numeric IP address.
-    # Return an array of seven elements:
+    # If the database is a City database (normal), return the result that +city+ would return.
+    # Otherwise, return an array of seven elements:
     # * The host or IP address string as requested
     # * The IP address string after looking up the host
-    # * The GeoIP country-ID as an integer
+    # * The GeoIP country-ID as an integer (N.B. this is excluded from the city results!)
     # * The ISO3166-1 two-character country code
     # * The ISO3166-2 three-character country code
     # * The ISO3166 English-language name of the country
     # * The two-character continent code
+    #
+    # The array has been extended with methods listed in GeoIP::CountryAccessors.ACCESSORS:
+    # request, ip, country_code, country_code2, country_code3, country_name, continent_code.
+    # In addition, +to_hash+ provides a symbol-keyed hash for the above values.
     #
     def country(hostname)
         if (@databaseType == GEOIP_CITY_EDITION_REV0 ||
@@ -734,7 +739,7 @@ class GeoIP
 
         # Convert numeric IP address to an integer
         ipnum = iptonum(ip)
-        if (@databaseType != GEOIP_COUNTRY_EDITION && 
+        if (@databaseType != GEOIP_COUNTRY_EDITION &&
             @databaseType != GEOIP_PROXY_EDITION &&
             @databaseType != GEOIP_NETSPEED_EDITION)
             throw "Invalid GeoIP database type, can't look up Country by IP"
@@ -746,14 +751,148 @@ class GeoIP
             CountryCode[code],          # ISO3166-1 code
             CountryCode3[code],         # ISO3166-2 code
             CountryName[code],          # Country name, per IS03166
-            CountryContinent[code] ]    # Continent code.
+            CountryContinent[code]      # Continent code.
+        ].extend(CountryAccessors)
     end
+
+    # Search the GeoIP database for the specified host, returning city info.
+    #
+    # +hostname+ is a String holding the host's DNS name or numeric IP address.
+    # Return an array of fourteen elements:
+    # * The host or IP address string as requested
+    # * The IP address string after looking up the host
+    # * The GeoIP country-ID as an integer
+    # * The ISO3166-1 two-character country code
+    # * The ISO3166-2 three-character country code
+    # * The ISO3166 English-language name of the country
+    # * The two-character continent code
+    # * The region name
+    # * The city name
+    # * The postal code
+    # * The latitude
+    # * The longitude
+    # * The USA dma_code and area_code, if available (REV1 City database)
+    # * The timezone name, if known
+    #
+    # The array has been extended with methods listed in GeoIP::CityAccessors.ACCESSORS:
+    # request, ip, country_code2, country_code3, country_name, continent_code,
+    # region_name, city_name, postal_code, latitude, longitude, dma_code, area_code, timezone.
+    # In addition, +to_hash+ provides a symbol-keyed hash for the above values.
+    #
+    def city(hostname)
+        ip = hostname
+        if ip.kind_of?(String) && ip !~ /^[0-9.]*$/
+            # Lookup IP address, we were given a name
+            ip = IPSocket.getaddress(hostname)
+            ip = '0.0.0.0' if ip == '::1'
+        end
+
+        # Convert numeric IP address to an integer
+        ipnum = iptonum(ip)
+        if (@databaseType != GEOIP_CITY_EDITION_REV0 &&
+            @databaseType != GEOIP_CITY_EDITION_REV1)
+            throw "Invalid GeoIP database type, can't look up City by IP"
+        end
+        pos = seek_record(ipnum);
+        # This next statement was added to MaxMind's C version after it was rewritten in Ruby.
+        # It prevents unassigned IP addresses from returning bogus data.  There was concern over
+        # whether the changes to an application's behaviour were always correct, but this has been
+        # tested using an exhaustive search of the top 16 bits of the IP address space.  The records
+        # where the change takes effect contained *no* valid data.  If you're concerned, email me,
+        # and I'll send you the test program so you can test whatever IP range you think is causing
+        # problems, as I don't care to undertake an exhaustive search of the 32-bit space.
+        return nil if pos == @databaseSegments[0]
+        read_city(pos, hostname, ip).extend(CityAccessors)
+    end
+
+    # Search a ISP GeoIP database for the specified host, returning the ISP
+    #
+    # +hostname+ is a String holding the host's DNS name or numeric IP address.
+    # Return the ISP name
+    #
+    def isp(hostname)
+        ip = hostname
+        if ip.kind_of?(String) && ip !~ /^[0-9.]*$/
+            # Lookup IP address, we were given a name
+            ip = IPSocket.getaddress(hostname)
+            ip = '0.0.0.0' if ip == '::1'
+        end
+
+        # Convert numeric IP address to an integer
+        ipnum = iptonum(ip)
+        if @databaseType != GEOIP_ISP_EDITION
+            throw "Invalid GeoIP database type, can't look up Organization/ISP by IP"
+        end
+        pos = seek_record(ipnum);
+        off = pos + (2*@record_length-1) * @databaseSegments[0]
+        record = atomic_read(MAX_ORG_RECORD_LENGTH, off)
+        record = record.sub(/\000.*/n, '')
+        record
+    end
+
+    # Search a ASN GeoIP database for the specified host, returning the AS number + description
+    #
+    # +hostname+ is a String holding the host's DNS name or numeric IP address.
+    # Return the AS number + description
+    #
+    # Source:
+    # http://geolite.maxmind.com/download/geoip/database/asnum/GeoIPASNum.dat.gz
+    #
+    def asn(hostname)
+        ip = hostname
+        if ip.kind_of?(String) && ip !~ /^[0-9.]*$/
+            # Lookup IP address, we were given a name
+            ip = IPSocket.getaddress(hostname)
+            ip = '0.0.0.0' if ip == '::1'
+        end
+
+        # Convert numeric IP address to an integer
+        ipnum = iptonum(ip)
+        if (@databaseType != GEOIP_ASNUM_EDITION)
+            throw "Invalid GeoIP database type, can't look up ASN by IP"
+        end
+        pos = seek_record(ipnum);
+        off = pos + (2*@record_length-1) * @databaseSegments[0]
+        record = atomic_read(MAX_ASN_RECORD_LENGTH, off)
+        record = record.sub(/\000.*/n, '')
+
+        if record =~ /^(AS\d+)\s(.*)$/
+          # AS####, Description
+          return [$1, $2].extend(ASNAccessors)
+        end
+    end
+
+    # Search a ISP GeoIP database for the specified host, returning the organization
+    #
+    # +hostname+ is a String holding the host's DNS name or numeric IP address.
+    # Return the organization associated with it
+    #
+    alias_method(:organization, :isp)     # Untested, according to Maxmind docs this should work
+
+    # Iterate through a GeoIP city database
+    def each
+        if (@databaseType != GEOIP_CITY_EDITION_REV0 &&
+            @databaseType != GEOIP_CITY_EDITION_REV1)
+            throw "Invalid GeoIP database type, can't iterate thru non-City database"
+        end
+
+        @iter_pos = @databaseSegments[0] + 1
+        num = 0
+        until((rec = read_city(@iter_pos)).nil?)
+            yield(rec)
+            print "#{num}: #{@iter_pos}\n" if((num += 1) % 1000 == 0)
+        end
+        @iter_pos = nil
+        self
+    end
+
+    private
 
     # Search the GeoIP database for the specified host, returning city info
     #
     # +hostname+ is a String holding the host's DNS name or numeric IP address
-    # Return an array of twelve or fourteen elements:
-    # * All elements from the country query
+    # Return an array of fourteen elements:
+    # * All elements from the country query (except GeoIP's country code, bah!)
     # * The region (state or territory) name
     # * The city name
     # * The postal code (zipcode)
@@ -761,8 +900,6 @@ class GeoIP
     # * The longitude
     # * The dma_code and area_code, if available (REV1 City database)
     # * The timezone name, if known
-    private
-
     def read_city(pos, hostname = '', ip = '')
         off = pos + (2*@record_length-1) * @databaseSegments[0]
         record = atomic_read(FULL_RECORD_LENGTH, off)
@@ -836,135 +973,6 @@ class GeoIP
             [ TimeZone["#{CountryCode[code]}#{region}"] || TimeZone["#{CountryCode[code]}"] ]
     end
 
-    public
-
-    # Search the GeoIP database for the specified host, returning city info.
-    #
-    # +hostname+ is a String holding the host's DNS name or numeric IP address.
-    # Return an array of twelve or fourteen elements:
-    # * The host or IP address string as requested
-    # * The IP address string after looking up the host
-    # * The GeoIP country-ID as an integer
-    # * The ISO3166-1 two-character country code
-    # * The ISO3166-2 three-character country code
-    # * The ISO3166 English-language name of the country
-    # * The two-character continent code
-    # * The region name
-    # * The city name
-    # * The postal code
-    # * The latitude
-    # * The longitude
-    # * The USA dma_code and area_code, if available (REV1 City database)
-    #
-    def city(hostname)
-        ip = hostname
-        if ip.kind_of?(String) && ip !~ /^[0-9.]*$/
-            # Lookup IP address, we were given a name
-            ip = IPSocket.getaddress(hostname)
-            ip = '0.0.0.0' if ip == '::1'
-        end
-
-        # Convert numeric IP address to an integer
-        ipnum = iptonum(ip)
-        if (@databaseType != GEOIP_CITY_EDITION_REV0 &&
-            @databaseType != GEOIP_CITY_EDITION_REV1)
-            throw "Invalid GeoIP database type, can't look up City by IP"
-        end
-        pos = seek_record(ipnum);
-        # This next statement was added to MaxMind's C version after it was rewritten in Ruby.
-        # It prevents unassigned IP addresses from returning bogus data.  There was concern over
-        # whether the changes to an application's behaviour were always correct, but this has been
-        # tested using an exhaustive search of the top 16 bits of the IP address space.  The records
-        # where the change takes effect contained *no* valid data.  If you're concerned, email me,
-        # and I'll send you the test program so you can test whatever IP range you think is causing
-        # problems, as I don't care to undertake an exhaustive search of the 32-bit space.
-        return nil if pos == @databaseSegments[0]
-        read_city(pos, hostname, ip)
-    end
-
-    # Search a ISP GeoIP database for the specified host, returning the ISP
-    #
-    # +hostname+ is a String holding the host's DNS name or numeric IP address.
-    # Return the ISP name
-    #
-    def isp(hostname)
-        ip = hostname
-        if ip.kind_of?(String) && ip !~ /^[0-9.]*$/
-            # Lookup IP address, we were given a name
-            ip = IPSocket.getaddress(hostname)
-            ip = '0.0.0.0' if ip == '::1'
-        end
-
-        # Convert numeric IP address to an integer
-        ipnum = iptonum(ip)
-        if @databaseType != GEOIP_ISP_EDITION
-            throw "Invalid GeoIP database type, can't look up Organization/ISP by IP"
-        end
-        pos = seek_record(ipnum);
-        off = pos + (2*@record_length-1) * @databaseSegments[0]
-        record = atomic_read(MAX_ORG_RECORD_LENGTH, off)
-        record = record.sub(/\000.*/n, '')
-        record
-    end
-    
-    # Search a ASN GeoIP database for the specified host, returning the AS number + description
-    #
-    # +hostname+ is a String holding the host's DNS name or numeric IP address.
-    # Return the AS number + description
-    #
-    # Source:
-    # http://geolite.maxmind.com/download/geoip/database/asnum/GeoIPASNum.dat.gz
-    #   
-    def asn(hostname)
-        ip = hostname
-        if ip.kind_of?(String) && ip !~ /^[0-9.]*$/
-            # Lookup IP address, we were given a name
-            ip = IPSocket.getaddress(hostname)
-            ip = '0.0.0.0' if ip == '::1'
-        end
-
-        # Convert numeric IP address to an integer
-        ipnum = iptonum(ip)
-        if (@databaseType != GEOIP_ASNUM_EDITION)
-            throw "Invalid GeoIP database type, can't look up ASN by IP"
-        end
-        pos = seek_record(ipnum);
-        off = pos + (2*@record_length-1) * @databaseSegments[0]
-        record = atomic_read(MAX_ASN_RECORD_LENGTH, off)
-        record = record.sub(/\000.*/n, '')
-        
-        if record =~ /^(AS\d+)\s(.*)$/
-          # AS####, Description 
-          return [$1, $2]
-        end
-    end
-
-    # Search a ISP GeoIP database for the specified host, returning the organization
-    #
-    # +hostname+ is a String holding the host's DNS name or numeric IP address.
-    # Return the organization associated with it
-    #
-    alias_method(:organization, :isp)     # Untested, according to Maxmind docs this should work
-
-    # Iterate through a GeoIP city database
-    def each
-        if (@databaseType != GEOIP_CITY_EDITION_REV0 &&
-            @databaseType != GEOIP_CITY_EDITION_REV1)
-            throw "Invalid GeoIP database type, can't iterate thru non-City database"
-        end
-
-        @iter_pos = @databaseSegments[0] + 1
-        num = 0
-        until((rec = read_city(@iter_pos)).nil?)
-            yield(rec)
-            print "#{num}: #{@iter_pos}\n" if((num += 1) % 1000 == 0)
-        end
-        @iter_pos = nil
-        self
-    end
-
-    private
-      
     def iptonum(ip)     # Convert numeric IP address to integer
         if ip.kind_of?(String) &&
             ip =~ /^([0-9]+)\.([0-9]+)\.([0-9]+)\.([0-9]+)$/
@@ -1014,6 +1022,49 @@ class GeoIP
         else
             IO.pread(@file.fileno, length, offset)
         end
+    end
+
+    module CountryAccessors
+      ACCESSORS = [
+        :request, :ip, :country_code, :country_code2, :country_code3, :country_name, :continent_code
+      ]
+      ACCESSORS.each_with_index do |method, i|
+        define_method(method) { self[i] }
+      end
+
+      def to_hash
+        ACCESSORS.inject({}) do |hash, key|
+          hash[key] = self.send(key)
+          hash
+        end
+      end
+    end
+
+    module CityAccessors
+      ACCESSORS = [
+        :request, :ip, :country_code2, :country_code3, :country_name, :continent_code,
+        :region_name, :city_name, :postal_code, :latitude, :longitude, :dma_code, :area_code, :timezone
+      ]
+      ACCESSORS.each_with_index do |method, i|
+        define_method(method) { self[i] }
+      end
+
+      def to_hash
+        ACCESSORS.inject({}) do |hash, key|
+          hash[key] = self.send(key)
+          hash
+        end
+      end
+    end
+
+    module ASNAccessors
+      def ip
+        self[0]
+      end
+
+      def asn
+        self[1]
+      end
     end
 end
 
