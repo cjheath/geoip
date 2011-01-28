@@ -16,19 +16,29 @@ This release adds support for timezone names, thanks to Tonni Aagesen.
 == SYNOPSIS:
 
   require 'geoip'
-  GeoIP.new('GeoLiteCity.dat').country('www.atlantis.sk')
-  => ["www.atlantis.sk", "217.67.18.26", "SK", "SVK", "Slovakia", "EU", "02", "Bratislava", "", 48.15, 17.1167, nil, nil, "Europe/Bratislava"]
+  result = GeoIP.new('GeoIP.dat').country('www.atlantis.sk')
+  => {:hostname=>"www.atlantis.sk", :ip=>"217.67.18.26", :country_code=>196, :country_alpha2=>"SK", :country_alpha3=>"SVK", :country_name=>"Slovakia", :continent=>"EU"}
+  result.to_a
+  => ["www.atlantis.sk", "217.67.18.26", 196, "SK", "SVK", "Slovakia", "EU"]
 
   Returned values are the requested hostname, the IP address as a dotted quad,
-  Maxmind's country code, the ISO 3166-1 alpha-2 country code, the ISO 3166-1 alpha-3 country code,
-  the ISO 3166 country name, and the continent code.
+  Maxmind's country code, the ISO 3166-1 alpha-2 country code,
+  the ISO 3166-1 alpha-3 country code, the ISO 3166 country name, and the continent code.
+  Note that if a city database (like GeoLiteCity.dat) is used, this method
+  delegates to the country method.
 
-  GeoIP.new('GeoCity.dat').city('github.com')
-  => ["github.com", "207.97.227.239", "US", "USA", "United States", "NA", "CA", "San Francisco", "94110", 37.7484, -122.4156, 807, 415, "America/Los_Angeles"]
+  result = GeoIP.new('GeoCity.dat').city('github.com')
+  => {:hostname=>"github.com", :ip=>"207.97.227.239", :country_alpha2=>"US", :country_alpha3=>"USA", :country_name=>"United States", :continent=>"NA", :region=>"TX", :city=>"San Antonio", :postal_code=>"78229", :latitude=>29.5072, :longitude=>-98.5748, :us_dma_code=>641, :us_area_code=>210, :timezone=>"America/Chicago"}
+  result.to_a
+  => ["github.com", "207.97.227.239", "US", "USA", "United States", "NA", "TX", "San Antonio", "78229", 29.5072, -98.5748, 641, 210, "America/Chicago"]
 
-  Returned values are the country values followed by region or state name,
-  city name, postal_code/zipcode, latitude, longitude, USA DMA code, USA area code,
-  timezone name. Sorry it's not a Hash... historical.
+  Returned values are the country values (except Maxmind's country code) followed
+  by region or state name, city name, postal_code/zipcode, latitude, longitude,
+  USA DMA code, USA area code, timezone name.
+
+  For backwards compatibility, results from #country and #city can be accessed by
+  their hash key, or by their numeric index.
+  So result[:country_name] is equivalent to result[4].
 
   GeoIP.new('GeoIPASNum.dat').asn("www.fsb.ru")
   => ["AS8342", "RTComm.RU Autonomous System"]

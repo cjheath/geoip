@@ -710,14 +710,15 @@ class GeoIP
     # Search the GeoIP database for the specified host, returning country info
     #
     # +hostname+ is a String holding the host's DNS name or numeric IP address.
-    # Return an array of seven elements:
-    # * The host or IP address string as requested
-    # * The IP address string after looking up the host
-    # * The GeoIP country-ID as an integer
-    # * The two-character country code (ISO 3166-1 alpha-2)
-    # * The three-character country code (ISO 3166-1 alpha-3)
-    # * The ISO 3166 English-language name of the country
-    # * The two-character continent code
+    #
+    # Return a GeoIP::Result (hash or numeric array access) with seven elements:
+    # * :hostname => The host or IP address string as requested
+    # * :ip => The IP address string after looking up the host
+    # * :country_code => The GeoIP country-ID as an integer
+    # * :country_alpha2 => The two-character country code (ISO 3166-1 alpha-2)
+    # * :country_alpha3 => The three-character country code (ISO 3166-1 alpha-3)
+    # * :country_name => The ISO 3166 English-language name of the country
+    # * :continent => The two-character continent code
     #
     def country(hostname)
         if (@databaseType == GEOIP_CITY_EDITION_REV0 ||
@@ -740,36 +741,20 @@ class GeoIP
             throw "Invalid GeoIP database type, can't look up Country by IP"
         end
         code = seek_record(ipnum) - COUNTRY_BEGIN;
-        [   hostname,                   # Requested hostname
-            ip,                         # Ip address as dotted quad
-            code,                       # GeoIP's country code
-            CountryCode[code],          # ISO 3166-1 alpha-2
-            CountryCode3[code],         # ISO 3166-1 alpha-3
-            CountryName[code],          # Country name, per ISO 3166
-            CountryContinent[code] ]    # Continent code.
+        Result[[
+            [:hostname, hostname],
+            [:ip, ip],
+            [:country_code, code],
+            [:country_alpha2, CountryCode[code]],
+            [:country_alpha3, CountryCode3[code]],
+            [:country_name, CountryName[code]],
+            [:continent, CountryContinent[code]]
+        ]]
     end
 
     private
 
-    # Search the GeoIP database for the specified host, returning city info
-    #
-    # +hostname+ is a String holding the host's DNS name or numeric IP address
-    # Return an array of fourteen elements:
-    # * The host or IP address string as requested
-    # * The IP address string after looking up the host
-    # * The two-character country code (ISO 3166-1 alpha-2)
-    # * The three-character country code (ISO 3166-1 alpha-3)
-    # * The ISO 3166 English-language name of the country
-    # * The two-character continent code
-    # * The region (state or territory) name
-    # * The city name
-    # * The postal code (zipcode)
-    # * The latitude
-    # * The longitude
-    # * The dma_code, if available (REV1 City database)
-    # * The area_code, if available (REV1 City database)
-    # * The timezone name, if known
-    #
+    # See GeoIP#city
     def read_city(pos, hostname = '', ip = '')
         off = pos + (2*@record_length-1) * @databaseSegments[0]
         record = atomic_read(FULL_RECORD_LENGTH, off)
@@ -813,7 +798,6 @@ class GeoIP
             longitude = ''
         end
 
-        us_area_codes = []
         if (record &&
                 record[0,3] &&
                 @databaseType == GEOIP_CITY_EDITION_REV1 &&
@@ -821,26 +805,29 @@ class GeoIP
             dmaarea_combo = le_to_ui(record[0,3].unpack('C*'))
             dma_code = dmaarea_combo / 1000;
             area_code = dmaarea_combo % 1000;
-            us_area_codes = [ dma_code, area_code ]
             @iter_pos += 3 unless @iter_pos.nil?
         else
-            us_area_codes = [ nil, nil ]  # Ensure that TimeZone is always at the same offset
+            dma_code, area_code = nil, nil
         end
 
-        [   hostname,                   # Requested hostname
-            ip,                         # Ip address as dotted quad
-            CountryCode[code],          # ISO 3166-1 alpha-2 code
-            CountryCode3[code],         # ISO 3166-1 alpha-3 code
-            CountryName[code],          # Country name, per ISO 3166
-            CountryContinent[code],     # Continent code.
-            region,                     # Region name
-            city,                       # City name
-            postal_code,                # Postal code
-            latitude,
-            longitude,
-        ] +
-            us_area_codes +
-            [ TimeZone["#{CountryCode[code]}#{region}"] || TimeZone["#{CountryCode[code]}"] ]
+        timezone = TimeZone["#{CountryCode[code]}#{region}"] || TimeZone["#{CountryCode[code]}"]
+
+        Result[[
+            [:hostname, hostname],
+            [:ip, ip],
+            [:country_alpha2, CountryCode[code]],
+            [:country_alpha3, CountryCode3[code]],
+            [:country_name, CountryName[code]],
+            [:continent, CountryContinent[code]],
+            [:region, region],
+            [:city, city],
+            [:postal_code, postal_code],
+            [:latitude, latitude],
+            [:longitude, longitude],
+            [:us_dma_code, dma_code],
+            [:us_area_code, area_code],
+            [:timezone, timezone]
+          ]]
     end
 
     public
@@ -848,7 +835,8 @@ class GeoIP
     # Search the GeoIP database for the specified host, returning city info.
     #
     # +hostname+ is a String holding the host's DNS name or numeric IP address.
-    # Return an array of fourteen elements:
+    #
+    # Return a GeoIP::Result (hash or numeric array access) with fourteen elements:
     # * The host or IP address string as requested
     # * The IP address string after looking up the host
     # * The two-character country code (ISO 3166-1 alpha-2)
@@ -1022,6 +1010,23 @@ class GeoIP
         else
             IO.pread(@file.fileno, length, offset)
         end
+    end
+
+    # A hash which also provides numeric array access to its values.
+    # Takes Hash data expressed as an array of arrays, each being [key, value].
+    # This is to preserve ordering, not possible with a Hash prior to Ruby 1.9.
+    # Usage: Result[ [ [key, value], ... ] ]
+    # Note that this mirrors one possible usage of Ruby's Hash.[] method.
+    class Result < Hash
+      attr_accessor :to_a
+      def self.[](pairs)
+        instance = super(pairs)
+        instance.to_a = pairs.map { |p| p.last }
+        instance
+      end
+      def [](key)
+        Fixnum === key ? to_a[key] : super
+      end
     end
 end
 
