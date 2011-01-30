@@ -715,9 +715,9 @@ class GeoIP
     # * The host or IP address string as requested
     # * The IP address string after looking up the host
     # * The GeoIP country-ID as an integer (N.B. this is excluded from the city results!)
-    # * The ISO3166-1 two-character country code
-    # * The ISO3166-2 three-character country code
-    # * The ISO3166 English-language name of the country
+    # * The two-character country code (ISO 3166-1 alpha-2)
+    # * The three-character country code (ISO 3166-2 alpha-3)
+    # * The ISO 3166 English-language name of the country
     # * The two-character continent code
     #
     # The array has been extended with methods listed in GeoIP::CountryAccessors.ACCESSORS:
@@ -748,9 +748,9 @@ class GeoIP
         [   hostname,                   # Requested hostname
             ip,                         # Ip address as dotted quad
             code,                       # GeoIP's country code
-            CountryCode[code],          # ISO3166-1 code
-            CountryCode3[code],         # ISO3166-2 code
-            CountryName[code],          # Country name, per IS03166
+            CountryCode[code],          # ISO3166-1 alpha-2 code
+            CountryCode3[code],         # ISO3166-2 alpha-3 code
+            CountryName[code],          # Country name, per ISO 3166
             CountryContinent[code]      # Continent code.
         ].extend(CountryAccessors)
     end
@@ -761,17 +761,17 @@ class GeoIP
     # Return an array of fourteen elements:
     # * The host or IP address string as requested
     # * The IP address string after looking up the host
-    # * The GeoIP country-ID as an integer
-    # * The ISO3166-1 two-character country code
-    # * The ISO3166-2 three-character country code
-    # * The ISO3166 English-language name of the country
+    # * The two-character country code (ISO 3166-1 alpha-2)
+    # * The three-character country code (ISO 3166-2 alpha-3)
+    # * The ISO 3166 English-language name of the country
     # * The two-character continent code
-    # * The region name
+    # * The region name (state or territory)
     # * The city name
-    # * The postal code
+    # * The postal code (zipcode)
     # * The latitude
     # * The longitude
-    # * The USA dma_code and area_code, if available (REV1 City database)
+    # * The USA dma_code if known (only REV1 City database)
+    # * The USA area_code if known (only REV1 City database)
     # * The timezone name, if known
     #
     # The array has been extended with methods listed in GeoIP::CityAccessors.ACCESSORS:
@@ -943,7 +943,6 @@ class GeoIP
             longitude = ''
         end
 
-        us_area_codes = []
         if (record &&
                 record[0,3] &&
                 @databaseType == GEOIP_CITY_EDITION_REV1 &&
@@ -951,10 +950,9 @@ class GeoIP
             dmaarea_combo = le_to_ui(record[0,3].unpack('C*'))
             dma_code = dmaarea_combo / 1000;
             area_code = dmaarea_combo % 1000;
-            us_area_codes = [ dma_code, area_code ]
             @iter_pos += 3 unless @iter_pos.nil?
         else
-            us_area_codes = [ nil, nil ]  # Ensure that TimeZone is always at the same offset
+            dma_code, area_code = nil, nil
         end
 
         [   hostname,                   # Requested hostname
@@ -968,8 +966,9 @@ class GeoIP
             postal_code,                # Postal code
             latitude,
             longitude,
+            dma_code,
+            area_code
         ] +
-            us_area_codes +
             [ TimeZone["#{CountryCode[code]}#{region}"] || TimeZone["#{CountryCode[code]}"] ]
     end
 

@@ -16,19 +16,31 @@ This release adds support for timezone names, thanks to Tonni Aagesen.
 == SYNOPSIS:
 
   require 'geoip'
-  GeoIP.new('GeoLiteCity.dat').country('www.atlantis.sk')
-  => ["www.atlantis.sk", "217.67.18.26", "SK", "SVK", "Slovakia", "EU", "02", "Bratislava", "", 48.15, 17.1167, nil, nil, "Europe/Bratislava"]
+
+  # Use the country database:
+  GeoIP.new('GeoIP.dat').country('www.atlantis.sk')
+  => ["www.atlantis.sk", "217.67.18.26", 196, "SK", "SVK", "Slovakia", "EU"]
 
   Returned values are the requested hostname, the IP address as a dotted quad,
-  Maxmind's country code, the ISO3166-1 country code, the ISO3166-2 country code,
-  the ISO3166 country name, and the continent code.
+  Maxmind's country code, the ISO3166-1 alpha-2 country code, the ISO3166-2 alpha-3
+  country code, the ISO3166 country name, and the continent code.
+
+  # Use the city database:
+  GeoIP.new('GeoLiteCity.dat').country('www.atlantis.sk')
+  => ["www.atlantis.sk", "217.67.18.26", "SK", "SVK", "Slovakia", "EU", "02", "Bratislava", "", 48.15, 17.1167, nil, nil, "Europe/Bratislava"]
 
   GeoIP.new('GeoCity.dat').city('github.com')
   => ["github.com", "207.97.227.239", "US", "USA", "United States", "NA", "CA", "San Francisco", "94110", 37.7484, -122.4156, 807, 415, "America/Los_Angeles"]
 
-  Returned values are the country values followed by region or state name,
+  Returned values are the requested hostname, the IP address as a dotted quad,
+  the ISO3166-1 alpha-2 country code, the ISO3166-2 alpha-3 country code, the
+  ISO3166 country name, the continent code, the region (state or territory) name,
   city name, postal_code/zipcode, latitude, longitude, USA DMA code, USA area code,
-  timezone name. Sorry it's not a Hash... historical.
+  timezone name.
+
+  Result arrays from both city and country also contain accessor methods as appropriate:
+  request, ip, country_code, country_code2, country_code3, country_name, continent_code,
+  region_name, city_name, postal_code, latitude, longitude, dma_code, area_code, timezone
 
   GeoIP.new('GeoIPASNum.dat').asn("www.fsb.ru")
   => ["AS8342", "RTComm.RU Autonomous System"]
