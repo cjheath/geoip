@@ -50,8 +50,11 @@ rescue LoadError
 end
 
 class GeoIP
+    # The GeoIP GEM version number
     VERSION = "0.9.0"
+
     private
+    # Ordered list of the ISO3166 2-character country codes, ordered by GeoIP ID
     CountryCode = [
         "--","AP","EU","AD","AE","AF","AG","AI","AL","AM","AN",
         "AO","AQ","AR","AS","AT","AU","AW","AZ","BA","BB",
@@ -81,6 +84,7 @@ class GeoIP
         "BL","MF"
     ]
 
+    # Ordered list of the ISO3166 3-character country codes, ordered by GeoIP ID
     CountryCode3 = [
         "--","AP","EU","AND","ARE","AFG","ATG","AIA","ALB","ARM","ANT",
         "AGO","AQ","ARG","ASM","AUT","AUS","ABW","AZE","BIH","BRB",
@@ -110,6 +114,7 @@ class GeoIP
         "BLM","MAF"
     ]
 
+    # Ordered list of the English names of the countries, ordered by GeoIP ID
     CountryName = [
         "N/A",
         "Asia/Pacific Region",
@@ -366,6 +371,7 @@ class GeoIP
         "Saint Martin"
     ]
 
+    # Ordered list of the ISO3166 2-character continent code of the countries, ordered by GeoIP ID
     CountryContinent = [
         "--","AS","EU","EU","AS","AS","SA","SA","EU","AS","SA",
         "AF","AN","SA","OC","EU","OC","SA","AS","EU","SA",
@@ -395,6 +401,7 @@ class GeoIP
         "SA","SA"
     ]
 
+    # Hash of the timezone codes mapped to timezone name, per zoneinfo
     TimeZone = {
         "USAL" => "America/Chicago", "USAK" => "America/Anchorage", "USAZ" => "America/Phoenix",
         "USAR" => "America/Chicago", "USCA" => "America/Los_Angeles", "USCO" => "America/Denver",
@@ -624,37 +631,36 @@ class GeoIP
     }
 
     public
-    # Edition enumeration:
-    (GEOIP_COUNTRY_EDITION,
-    GEOIP_CITY_EDITION_REV1,
-    GEOIP_REGION_EDITION_REV1,
-    GEOIP_ISP_EDITION,
-    GEOIP_ORG_EDITION,
-    GEOIP_CITY_EDITION_REV0,
-    GEOIP_REGION_EDITION_REV0,
-    GEOIP_PROXY_EDITION,
-    GEOIP_ASNUM_EDITION,
-    GEOIP_NETSPEED_EDITION,
-    ) = *1..10
+    GEOIP_COUNTRY_EDITION = 1
+    GEOIP_CITY_EDITION_REV1 = 2
+    GEOIP_REGION_EDITION_REV1 = 3
+    GEOIP_ISP_EDITION = 4
+    GEOIP_ORG_EDITION = 5
+    GEOIP_CITY_EDITION_REV0 = 6
+    GEOIP_REGION_EDITION_REV0 = 7
+    GEOIP_PROXY_EDITION = 8
+    GEOIP_ASNUM_EDITION = 9
+    GEOIP_NETSPEED_EDITION = 10
 
     private
-    COUNTRY_BEGIN = 16776960
-    STATE_BEGIN_REV0 = 16700000
-    STATE_BEGIN_REV1 = 16000000
-    STRUCTURE_INFO_MAX_SIZE = 20
-    DATABASE_INFO_MAX_SIZE = 100
-    MAX_ORG_RECORD_LENGTH = 300
-    MAX_ASN_RECORD_LENGTH = 300 # unverified
-    US_OFFSET = 1
-    CANADA_OFFSET = 677
-    WORLD_OFFSET = 1353
-    FIPS_RANGE = 360
-    FULL_RECORD_LENGTH = 50
+    COUNTRY_BEGIN = 16776960          #:nodoc:
+    STATE_BEGIN_REV0 = 16700000       #:nodoc:
+    STATE_BEGIN_REV1 = 16000000       #:nodoc:
+    STRUCTURE_INFO_MAX_SIZE = 20      #:nodoc:
+    DATABASE_INFO_MAX_SIZE = 100      #:nodoc:
+    MAX_ORG_RECORD_LENGTH = 300       #:nodoc:
+    MAX_ASN_RECORD_LENGTH = 300       #:nodoc: unverified
+    US_OFFSET = 1                     #:nodoc:
+    CANADA_OFFSET = 677               #:nodoc:
+    WORLD_OFFSET = 1353               #:nodoc:
+    FIPS_RANGE = 360                  #:nodoc:
+    FULL_RECORD_LENGTH = 50           #:nodoc:
 
-    STANDARD_RECORD_LENGTH = 3
-    SEGMENT_RECORD_LENGTH = 3
+    STANDARD_RECORD_LENGTH = 3        #:nodoc:
+    SEGMENT_RECORD_LENGTH = 3         #:nodoc:
 
     public
+    # The Edition number that identifies which kind of database you've opened
     attr_reader :databaseType
 
     # Open the GeoIP database and determine the file format version
@@ -806,6 +812,7 @@ class GeoIP
     end
 
     # Search a ISP GeoIP database for the specified host, returning the ISP
+    # Not all GeoIP databases contain ISP information. Check http://maxmind.com
     #
     # +hostname+ is a String holding the host's DNS name or numeric IP address.
     # Return the ISP name
@@ -900,7 +907,7 @@ class GeoIP
     # * The longitude
     # * The dma_code and area_code, if available (REV1 City database)
     # * The timezone name, if known
-    def read_city(pos, hostname = '', ip = '')
+    def read_city(pos, hostname = '', ip = '')  #:nodoc:
         off = pos + (2*@record_length-1) * @databaseSegments[0]
         record = atomic_read(FULL_RECORD_LENGTH, off)
         return nil unless record && record.size == FULL_RECORD_LENGTH
@@ -972,7 +979,7 @@ class GeoIP
             [ TimeZone["#{CountryCode[code]}#{region}"] || TimeZone["#{CountryCode[code]}"] ]
     end
 
-    def iptonum(ip)     # Convert numeric IP address to integer
+    def iptonum(ip)     #:nodoc: Convert numeric IP address to integer
         if ip.kind_of?(String) &&
             ip =~ /^([0-9]+)\.([0-9]+)\.([0-9]+)\.([0-9]+)$/
             ip = be_to_ui(Regexp.last_match().to_a.slice(1..4))
@@ -980,7 +987,7 @@ class GeoIP
         ip
     end
 
-    def seek_record(ipnum)
+    def seek_record(ipnum)    #:nodoc:
         # Binary search in the file.
         # Records are pairs of little-endian integers, each of @record_length.
         offset = 0
@@ -996,14 +1003,14 @@ class GeoIP
     end
 
     # Convert a big-endian array of numeric bytes to unsigned int
-    def be_to_ui(s)
+    def be_to_ui(s)   #:nodoc:
         s.inject(0) { |m, o|
             (m << 8) + o.to_i
         }
     end
 
     # Same for little-endian
-    def le_to_ui(s)
+    def le_to_ui(s)   #:nodoc:
         be_to_ui(s.reverse)
     end
 
@@ -1012,7 +1019,7 @@ class GeoIP
     # and multiprocess-safe).  Otherwise we'll use a mutex to synchronize
     # access (only providing protection against multiple threads, but not
     # file descriptors shared across multiple processes).
-    def atomic_read(length, offset)
+    def atomic_read(length, offset)   #:nodoc:
         if @mutex
             @mutex.synchronize {
                 @file.seek(offset)
@@ -1023,7 +1030,7 @@ class GeoIP
         end
     end
 
-    module CountryAccessors
+    module CountryAccessors   #:nodoc:
       ACCESSORS = [
         :request, :ip, :country_code, :country_code2, :country_code3, :country_name, :continent_code
       ]
@@ -1039,7 +1046,7 @@ class GeoIP
       end
     end
 
-    module CityAccessors
+    module CityAccessors    #:nodoc:
       ACCESSORS = [
         :request, :ip, :country_code2, :country_code3, :country_name, :continent_code,
         :region_name, :city_name, :postal_code, :latitude, :longitude, :dma_code, :area_code, :timezone
@@ -1056,7 +1063,7 @@ class GeoIP
       end
     end
 
-    module ASNAccessors
+    module ASNAccessors   #:nodoc:
       def ip
         self[0]
       end
