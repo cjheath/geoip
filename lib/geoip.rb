@@ -51,7 +51,7 @@ end
 
 class GeoIP
     # The GeoIP GEM version number
-    VERSION = "0.9.0"
+    VERSION = "1.0.0"
 
     private
     # Ordered list of the ISO3166 2-character country codes, ordered by GeoIP ID
@@ -1064,7 +1064,7 @@ class GeoIP
     end
 
     module ASNAccessors   #:nodoc:
-      def ip
+      def as_num
         self[0]
       end
 

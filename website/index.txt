@@ -4,37 +4,51 @@ h2. 'Geographic info for an IP address'
 
 h2. What
 
-GeoIP searches a GeoIP database for a given host or IP address, and
-returns information about the country where the IP address is allocated,
-and the city, ISP and other information, if you have that database version.
+GeoIP searches a GeoIP database from http://maxmind.com for a given host or IP address,
+and returns information about the country, city and/or ISP for that IP address,
+depending on the database version.
 
 h2. Installing
 
-<pre syntax="ruby">sudo gem install geoip</pre>
+<pre>sudo gem install geoip</pre>
+
+h2. Locations
+
+  "http://github.com/cjheath/geoip":http://github.com/cjheath/geoip
+  <br>
+  "http://geoip.rubyforge.org/":http://geoip.rubyforge.org/
 
 h2. Prerequisites
 
-You need at least the free GeoIP.dat, for which the last known download
-location is "http://www.maxmind.com/download/geoip/database/GeoIP.dat.gz":http://www.maxmind.com/download/geoip/database/GeoIP.dat.gz
-or the city database "http://www.maxmind.com/app/geolitecity":http://www.maxmind.com/app/geolitecity
-This API requires the file to be decompressed for searching. Other versions
-of this database are available for purchase which contain more detailed
-information, but this information is not returned by this implementation.
-See www.maxmind.com for more information.
+You need one of the free GeoLite country, city or ASN databases, or a subscription database version.
+The last known download locations for the GeoLite database versions are
+"http://geolite.maxmind.com/download/geoip/database/GeoLiteCountry/GeoIP.dat.gz":http://geolite.maxmind.com/download/geoip/database/GeoLiteCountry/GeoIP.dat.gz
+"http://geolite.maxmind.com/download/geoip/database/GeoLiteCity.dat.gz":http://geolite.maxmind.com/download/geoip/database/GeoLiteCity.dat.gz
+"http://geolite.maxmind.com/download/geoip/database/asnum/GeoIPASNum.dat.gz":http://geolite.maxmind.com/download/geoip/database/asnum/GeoIPASNum.dat.gz
+
+This API requires the database to be decompressed for searching.
 
 h2. Example
 
     <pre>
     require 'geoip'
-    GeoIP.new('GeoIP.dat').country("www.netscape.sk")
-    => ["www.netscape.sk", "217.67.16.35", 196, "SK", "SVK", "Slovakia", "EU"]
-
-
-    GeoIP.new('GeoCity.dat').city('github.com')
-    => ["github.com", "207.97.227.239", "US", "USA", "United States", "NA", "CA", "San Francisco", "94110", 37.7484, -122.4156, "America/Los_Angeles", 807, 415]
-
-
-    GeoIP.new('GeoIPASNum.dat').asn("www.fsb.ru")
+    c = GeoIP.new('GeoIP.dat').country('www.nokia.com')
+    => ["www.nokia.com", "147.243.3.83", 69, "FI", "FIN", "Finland", "EU"]
+    c.country_code3
+    => "FIN"
+    c.to_hash
+    => {:country_code3=>"FIN", :country_name=>"Finland", :continent_code=>"EU",
+    :request=>"www.nokia.com", :country_code=>69, :country_code2=>"FI", :ip=>"147.243.3.83"}
+    <br>
+    c = GeoIP.new('GeoLiteCity.dat').city('github.com')
+    => ["github.com", "207.97.227.239", "US", "USA", "United States", "NA", "CA",
+    "San Francisco", "94110", 37.7484, -122.4156, 807, 415, "America/Los_Angeles"]
+    >> c.longitude
+    => -122.4156
+    >> c.timezone
+    => "America/Los_Angeles"
+    <br>
+    c = GeoIP.new('GeoIPASNum.dat').asn("www.fsb.ru")
     => ["AS8342", "RTComm.RU Autonomous System"]
     </pre>
 
