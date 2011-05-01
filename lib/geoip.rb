@@ -827,7 +827,8 @@ class GeoIP
 
         # Convert numeric IP address to an integer
         ipnum = iptonum(ip)
-        if @databaseType != GEOIP_ISP_EDITION
+        if (@databaseType != GEOIP_ISP_EDITION &&
+            @databaseType != GEOIP_ORG_EDITION)
             throw "Invalid GeoIP database type, can't look up Organization/ISP by IP"
         end
         pos = seek_record(ipnum);
