@@ -185,7 +185,7 @@ class GeoIP
     #
     # +hostname+ is a String holding the host's DNS name or numeric IP address.
     # If the database is a City database (normal), return the result that +city+ would return.
-    # Otherwise, return an array of seven elements:
+    # Otherwise, return a Country object with the seven elements:
     # * The host or IP address string as requested
     # * The IP address string after looking up the host
     # * The GeoIP country-ID as an integer (N.B. this is excluded from the city results!)
@@ -193,10 +193,6 @@ class GeoIP
     # * The three-character country code (ISO 3166-2 alpha-3)
     # * The ISO 3166 English-language name of the country
     # * The two-character continent code
-    #
-    # The array has been extended with methods listed in GeoIP::CountryAccessors.ACCESSORS:
-    # request, ip, country_code, country_code2, country_code3, country_name, continent_code.
-    # In addition, +to_hash+ provides a symbol-keyed hash for the above values.
     #
     def country(hostname)
         if (@databaseType == GEOIP_CITY_EDITION_REV0 ||
@@ -234,7 +230,7 @@ class GeoIP
     # Search the GeoIP database for the specified host, returning city info.
     #
     # +hostname+ is a String holding the host's DNS name or numeric IP address.
-    # Return an array of fourteen elements:
+    # Return a City object with the fourteen elements:
     # * The host or IP address string as requested
     # * The IP address string after looking up the host
     # * The two-character country code (ISO 3166-1 alpha-2)
@@ -249,11 +245,6 @@ class GeoIP
     # * The USA dma_code if known (only REV1 City database)
     # * The USA area_code if known (only REV1 City database)
     # * The timezone name, if known
-    #
-    # The array has been extended with methods listed in GeoIP::CityAccessors.ACCESSORS:
-    # request, ip, country_code2, country_code3, country_name, continent_code,
-    # region_name, city_name, postal_code, latitude, longitude, dma_code, area_code, timezone.
-    # In addition, +to_hash+ provides a symbol-keyed hash for the above values.
     #
     def city(hostname)
         ip = hostname
@@ -278,7 +269,7 @@ class GeoIP
         # and I'll send you the test program so you can test whatever IP range you think is causing
         # problems, as I don't care to undertake an exhaustive search of the 32-bit space.
         return nil if pos == @databaseSegments[0]
-        read_city(pos, hostname, ip).extend(CityAccessors)
+        read_city(pos, hostname, ip)
     end
 
     # Search a ISP GeoIP database for the specified host, returning the ISP
