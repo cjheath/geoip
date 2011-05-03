@@ -2,6 +2,12 @@ History.txt
 Manifest.txt
 README.rdoc
 Rakefile
+bin/geoip.rb
 lib/geoip.rb
+data/geoip/country_code.yml
+data/geoip/country_code3.yml
+data/geoip/country_continent.yml
+data/geoip/country_name.yml
+data/geoip/time_zone.yml
 test/test_geoip.rb
 test/test_helper.rb
