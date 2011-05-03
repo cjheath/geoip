@@ -141,44 +141,8 @@ class GeoIP
         @databaseType = GEOIP_COUNTRY_EDITION
         @record_length = STANDARD_RECORD_LENGTH
         @file = File.open(filename, 'rb')
-        @file.seek(-3, IO::SEEK_END)
-        0.upto(STRUCTURE_INFO_MAX_SIZE-1) { |i|
-            if @file.read(3).bytes.all?{|byte| 255 == byte}
-                @databaseType = @file.respond_to?(:getbyte) ? @file.getbyte : @file.getc
-                @databaseType -= 105 if @databaseType >= 106
 
-                if (@databaseType == GEOIP_REGION_EDITION_REV0)
-                    # Region Edition, pre June 2003
-                    @databaseSegments = [ STATE_BEGIN_REV0 ]
-                elsif (@databaseType == GEOIP_REGION_EDITION_REV1)
-                    # Region Edition, post June 2003
-                    @databaseSegments = [ STATE_BEGIN_REV1 ]
-                elsif (@databaseType == GEOIP_CITY_EDITION_REV0 ||
-                       @databaseType == GEOIP_CITY_EDITION_REV1 ||
-                       @databaseType == GEOIP_ORG_EDITION ||
-                       @databaseType == GEOIP_ISP_EDITION ||
-                       @databaseType == GEOIP_ASNUM_EDITION)
-                    # City/Org Editions have two segments, read offset of second segment
-                    @databaseSegments = [ 0 ]
-                    sr = @file.read(3).unpack("C*")
-                    @databaseSegments[0] += le_to_ui(sr)
-
-                    if (@databaseType == GEOIP_ORG_EDITION ||
-                        @databaseType == GEOIP_ISP_EDITION)
-                        @record_length = 4
-                    end
-                end
-                break
-
-            else
-                @file.seek(-4, IO::SEEK_CUR)
-            end
-        }
-        if (@databaseType == GEOIP_COUNTRY_EDITION ||
-            @databaseType == GEOIP_PROXY_EDITION ||
-            @databaseType == GEOIP_NETSPEED_EDITION)
-            @databaseSegments = [ COUNTRY_BEGIN ]
-        end
+        detect_database_type!
     end
 
     # Search the GeoIP database for the specified host, returning country info
@@ -258,8 +222,9 @@ class GeoIP
         # where the change takes effect contained *no* valid data.  If you're concerned, email me,
         # and I'll send you the test program so you can test whatever IP range you think is causing
         # problems, as I don't care to undertake an exhaustive search of the 32-bit space.
-        return nil if pos == @databaseSegments[0]
-        read_city(pos, hostname, ip)
+        unless pos == @databaseSegments[0]
+          read_city(pos, hostname, ip)
+        end
     end
 
     # Search a ISP GeoIP database for the specified host, returning the ISP
@@ -305,10 +270,8 @@ class GeoIP
         record = atomic_read(MAX_ASN_RECORD_LENGTH, off)
         record = record.sub(/\000.*/n, '')
 
-        if record =~ /^(AS\d+)\s(.*)$/
-          # AS####, Description
-          return ASN.new($1, $2)
-        end
+        # AS####, Description
+        ASN.new($1, $2) if record =~ /^(AS\d+)\s(.*)$/
     end
 
     # Search a ISP GeoIP database for the specified host, returning the organization
@@ -339,6 +302,51 @@ class GeoIP
 
     private
 
+    #
+    # Detects the type of the database.
+    #
+    def detect_database_type!
+        @file.seek(-3, IO::SEEK_END)
+        0.upto(STRUCTURE_INFO_MAX_SIZE-1) { |i|
+            if @file.read(3).bytes.all?{|byte| 255 == byte}
+                @databaseType = @file.respond_to?(:getbyte) ? @file.getbyte : @file.getc
+                @databaseType -= 105 if @databaseType >= 106
+
+                if (@databaseType == GEOIP_REGION_EDITION_REV0)
+                    # Region Edition, pre June 2003
+                    @databaseSegments = [ STATE_BEGIN_REV0 ]
+                elsif (@databaseType == GEOIP_REGION_EDITION_REV1)
+                    # Region Edition, post June 2003
+                    @databaseSegments = [ STATE_BEGIN_REV1 ]
+                elsif (@databaseType == GEOIP_CITY_EDITION_REV0 ||
+                       @databaseType == GEOIP_CITY_EDITION_REV1 ||
+                       @databaseType == GEOIP_ORG_EDITION ||
+                       @databaseType == GEOIP_ISP_EDITION ||
+                       @databaseType == GEOIP_ASNUM_EDITION)
+                    # City/Org Editions have two segments, read offset of second segment
+                    @databaseSegments = [ 0 ]
+                    sr = @file.read(3).unpack("C*")
+                    @databaseSegments[0] += le_to_ui(sr)
+
+                    if (@databaseType == GEOIP_ORG_EDITION ||
+                        @databaseType == GEOIP_ISP_EDITION)
+                        @record_length = 4
+                    end
+                end
+                break
+
+            else
+                @file.seek(-4, IO::SEEK_CUR)
+            end
+        }
+
+        if (@databaseType == GEOIP_COUNTRY_EDITION ||
+            @databaseType == GEOIP_PROXY_EDITION ||
+            @databaseType == GEOIP_NETSPEED_EDITION)
+            @databaseSegments = [ COUNTRY_BEGIN ]
+        end
+    end
+
     # Search the GeoIP database for the specified host, returning city info
     #
     # +hostname+ is a String holding the host's DNS name or numeric IP address
@@ -354,7 +362,7 @@ class GeoIP
     def read_city(pos, hostname = '', ip = '')  #:nodoc:
         off = pos + (2*@record_length-1) * @databaseSegments[0]
         record = atomic_read(FULL_RECORD_LENGTH, off)
-        return nil unless record && record.size == FULL_RECORD_LENGTH
+        return unless record && record.size == FULL_RECORD_LENGTH
 
         # The country code is the first byte:
         code = record[0]
