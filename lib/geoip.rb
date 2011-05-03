@@ -58,7 +58,6 @@ class GeoIP
     # The data/ directory for geoip
     DATA_DIR = File.expand_path(File.join(File.dirname(__FILE__),'..','data','geoip'))
 
-    private
     # Ordered list of the ISO3166 2-character country codes, ordered by GeoIP ID
     CountryCode = YAML.load_file(File.join(DATA_DIR,'country_code.yml'))
 
@@ -74,7 +73,6 @@ class GeoIP
     # Hash of the timezone codes mapped to timezone name, per zoneinfo
     TimeZone = YAML.load_file(File.join(DATA_DIR,'time_zone.yml'))
 
-    public
     GEOIP_COUNTRY_EDITION = 1
     GEOIP_CITY_EDITION_REV1 = 2
     GEOIP_REGION_EDITION_REV1 = 3
@@ -86,7 +84,6 @@ class GeoIP
     GEOIP_ASNUM_EDITION = 9
     GEOIP_NETSPEED_EDITION = 10
 
-    private
     COUNTRY_BEGIN = 16776960          #:nodoc:
     STATE_BEGIN_REV0 = 16700000       #:nodoc:
     STATE_BEGIN_REV1 = 16000000       #:nodoc:
@@ -103,7 +100,6 @@ class GeoIP
     STANDARD_RECORD_LENGTH = 3        #:nodoc:
     SEGMENT_RECORD_LENGTH = 3         #:nodoc:
 
-    public
     # The Edition number that identifies which kind of database you've opened
     attr_reader :databaseType
 
