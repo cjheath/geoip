@@ -99,6 +99,35 @@ class GeoIP
     STANDARD_RECORD_LENGTH = 3        #:nodoc:
     SEGMENT_RECORD_LENGTH = 3         #:nodoc:
 
+    class Country < Struct.new(:request, :ip, :country_code, :country_code2, :country_code3, :country_name, :continent_code)
+
+      def to_hash
+        self.class.members.inject({}) do |hash, key|
+          hash[key] = self.send(key)
+          hash
+        end
+      end
+
+    end
+
+    class City < Struct.new(:request, :ip, :country_code2, :country_code3, :country_name, :continent_code,
+                            :region_name, :city_name, :postal_code, :latitude, :longitude, :dma_code, :area_code, :timezone)
+
+      def to_hash
+        self.class.members.inject({}) do |hash, key|
+          hash[key] = self.send(key)
+          hash
+        end
+      end
+
+    end
+
+    class ASN < Struct.new(:number, :asn)
+
+      alias as_num number
+
+    end
+
     # The Edition number that identifies which kind of database you've opened
     attr_reader :databaseType
 
@@ -190,14 +219,16 @@ class GeoIP
             throw "Invalid GeoIP database type, can't look up Country by IP"
         end
         code = seek_record(ipnum) - COUNTRY_BEGIN;
-        [   hostname,                   # Requested hostname
-            ip,                         # Ip address as dotted quad
-            code,                       # GeoIP's country code
-            CountryCode[code],          # ISO3166-1 alpha-2 code
-            CountryCode3[code],         # ISO3166-2 alpha-3 code
-            CountryName[code],          # Country name, per ISO 3166
-            CountryContinent[code]      # Continent code.
-        ].extend(CountryAccessors)
+
+        Country.new(
+          hostname,                   # Requested hostname
+          ip,                         # Ip address as dotted quad
+          code,                       # GeoIP's country code
+          CountryCode[code],          # ISO3166-1 alpha-2 code
+          CountryCode3[code],         # ISO3166-2 alpha-3 code
+          CountryName[code],          # Country name, per ISO 3166
+          CountryContinent[code]      # Continent code.
+        )
     end
 
     # Search the GeoIP database for the specified host, returning city info.
@@ -305,7 +336,7 @@ class GeoIP
 
         if record =~ /^(AS\d+)\s(.*)$/
           # AS####, Description
-          return [$1, $2].extend(ASNAccessors)
+          return ASN.new($1, $2)
         end
     end
 
@@ -402,21 +433,22 @@ class GeoIP
             dma_code, area_code = nil, nil
         end
 
-        [   hostname,                   # Requested hostname
-            ip,                         # Ip address as dotted quad
-            CountryCode[code],          # ISO3166-1 code
-            CountryCode3[code],         # ISO3166-2 code
-            CountryName[code],          # Country name, per IS03166
-            CountryContinent[code],     # Continent code.
-            region,                     # Region name
-            city,                       # City name
-            postal_code,                # Postal code
-            latitude,
-            longitude,
-            dma_code,
-            area_code
-        ] +
-            [ TimeZone["#{CountryCode[code]}#{region}"] || TimeZone["#{CountryCode[code]}"] ]
+        City.new(
+          hostname,                   # Requested hostname
+          ip,                         # Ip address as dotted quad
+          CountryCode[code],          # ISO3166-1 code
+          CountryCode3[code],         # ISO3166-2 code
+          CountryName[code],          # Country name, per IS03166
+          CountryContinent[code],     # Continent code.
+          region,                     # Region name
+          city,                       # City name
+          postal_code,                # Postal code
+          latitude,
+          longitude,
+          dma_code,
+          area_code
+          TimeZone["#{CountryCode[code]}#{region}"] || TimeZone["#{CountryCode[code]}"]
+        )
     end
 
     def iptonum(ip)     #:nodoc: Convert numeric IP address to integer
@@ -468,48 +500,5 @@ class GeoIP
         else
             IO.pread(@file.fileno, length, offset)
         end
-    end
-
-    module CountryAccessors   #:nodoc:
-      ACCESSORS = [
-        :request, :ip, :country_code, :country_code2, :country_code3, :country_name, :continent_code
-      ]
-      ACCESSORS.each_with_index do |method, i|
-        define_method(method) { self[i] }
-      end
-
-      def to_hash
-        ACCESSORS.inject({}) do |hash, key|
-          hash[key] = self.send(key)
-          hash
-        end
-      end
-    end
-
-    module CityAccessors    #:nodoc:
-      ACCESSORS = [
-        :request, :ip, :country_code2, :country_code3, :country_name, :continent_code,
-        :region_name, :city_name, :postal_code, :latitude, :longitude, :dma_code, :area_code, :timezone
-      ]
-      ACCESSORS.each_with_index do |method, i|
-        define_method(method) { self[i] }
-      end
-
-      def to_hash
-        ACCESSORS.inject({}) do |hash, key|
-          hash[key] = self.send(key)
-          hash
-        end
-      end
-    end
-
-    module ASNAccessors   #:nodoc:
-      def as_num
-        self[0]
-      end
-
-      def asn
-        self[1]
-      end
     end
 end
