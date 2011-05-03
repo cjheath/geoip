@@ -320,6 +320,8 @@ class GeoIP
 
     # Iterate through a GeoIP city database
     def each
+      return enum_for unless block_given?
+
         if (@databaseType != GEOIP_CITY_EDITION_REV0 &&
             @databaseType != GEOIP_CITY_EDITION_REV1)
             throw "Invalid GeoIP database type, can't iterate thru non-City database"
