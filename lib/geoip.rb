@@ -437,8 +437,8 @@ class GeoIP
           latitude,
           longitude,
           dma_code,
-          area_code
-          TimeZone["#{CountryCode[code]}#{region}"] || TimeZone["#{CountryCode[code]}"]
+          area_code,
+          (TimeZone["#{CountryCode[code]}#{region}"] || TimeZone["#{CountryCode[code]}"])
         )
     end
 
