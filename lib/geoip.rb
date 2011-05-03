@@ -1,4 +1,3 @@
-$:.unshift File.dirname(__FILE__)
 #
 # Native Ruby reader for the GeoIP database
 # Lookup the country where IP address is allocated
@@ -514,15 +513,3 @@ class GeoIP
       end
     end
 end
-
-if $0 == __FILE__
-    data = '/usr/share/GeoIP/GeoIP.dat'
-    data = ARGV.shift if ARGV[0] =~ /\.dat\Z/
-    g = GeoIP.new data
-
-    req = ([GeoIP::GEOIP_CITY_EDITION_REV1, GeoIP::GEOIP_CITY_EDITION_REV0].include?(g.databaseType)) ? :city : :country
-    ARGV.each { |a|
-        p g.send(req, a)
-    }
-end
-
