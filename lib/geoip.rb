@@ -200,12 +200,7 @@ class GeoIP
             return city(hostname)
         end
 
-        ip = hostname
-        if ip.kind_of?(String) && ip !~ /^[0-9.]*$/
-            # Lookup IP address, we were given a name
-            ip = IPSocket.getaddress(hostname)
-            ip = '0.0.0.0' if ip == '::1'
-        end
+        ip = lookup_ip(hostname)
 
         # Convert numeric IP address to an integer
         ipnum = iptonum(ip)
@@ -247,12 +242,7 @@ class GeoIP
     # * The timezone name, if known
     #
     def city(hostname)
-        ip = hostname
-        if ip.kind_of?(String) && ip !~ /^[0-9.]*$/
-            # Lookup IP address, we were given a name
-            ip = IPSocket.getaddress(hostname)
-            ip = '0.0.0.0' if ip == '::1'
-        end
+        ip = lookup_ip(hostname)
 
         # Convert numeric IP address to an integer
         ipnum = iptonum(ip)
@@ -279,12 +269,7 @@ class GeoIP
     # Return the ISP name
     #
     def isp(hostname)
-        ip = hostname
-        if ip.kind_of?(String) && ip !~ /^[0-9.]*$/
-            # Lookup IP address, we were given a name
-            ip = IPSocket.getaddress(hostname)
-            ip = '0.0.0.0' if ip == '::1'
-        end
+        ip = lookup_ip(hostname)
 
         # Convert numeric IP address to an integer
         ipnum = iptonum(ip)
@@ -308,12 +293,7 @@ class GeoIP
     # http://geolite.maxmind.com/download/geoip/database/asnum/GeoIPASNum.dat.gz
     #
     def asn(hostname)
-        ip = hostname
-        if ip.kind_of?(String) && ip !~ /^[0-9.]*$/
-            # Lookup IP address, we were given a name
-            ip = IPSocket.getaddress(hostname)
-            ip = '0.0.0.0' if ip == '::1'
-        end
+        ip = lookup_ip(hostname)
 
         # Convert numeric IP address to an integer
         ipnum = iptonum(ip)
@@ -440,6 +420,16 @@ class GeoIP
           area_code,
           (TimeZone["#{CountryCode[code]}#{region}"] || TimeZone["#{CountryCode[code]}"])
         )
+    end
+
+    def lookup_ip(ip_or_hostname)
+        if ip.kind_of?(String) && ip !~ /^[0-9.]*$/
+            # Lookup IP address, we were given a name
+            ip = IPSocket.getaddress(hostname)
+            ip = '0.0.0.0' if ip == '::1'
+        end
+
+        return ip
     end
 
     def iptonum(ip)     #:nodoc: Convert numeric IP address to integer
