@@ -130,7 +130,10 @@ class GeoIP
     # +filename+ is a String holding the path to the GeoIP.dat file
     # +options+ is an integer holding caching flags (unimplemented)
     def initialize(filename, flags = 0)
-        @mutex = IO.respond_to?(:pread) ? false : Mutex.new
+        @mutex = unless IO.respond_to?(:pread)
+                   Mutex.new
+                 end
+
         @flags = flags
         @databaseType = GEOIP_COUNTRY_EDITION
         @record_length = STANDARD_RECORD_LENGTH
