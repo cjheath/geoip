@@ -268,7 +268,7 @@ class GeoIP
     end
 
     pos = seek_record(ipnum)
-    off = pos + (2*@record_length-1) * @database_segments[0]
+    off = pos + (2 * (@record_length-1)) * @database_segments[0]
 
     record = atomic_read(MAX_ORG_RECORD_LENGTH, off)
     record = record.sub(/\000.*/n, '')
@@ -296,7 +296,7 @@ class GeoIP
       throw "Invalid GeoIP database type, can't look up ASN by IP"
     end
 
-    pos = seek_record(ipnum);
+    pos = seek_record(ipnum)
     off = pos + (2 * (@record_length - 1)) * @database_segments[0]
 
     record = atomic_read(MAX_ASN_RECORD_LENGTH, off)
@@ -343,8 +343,8 @@ class GeoIP
   def detect_database_type! # :nodoc:
     @file.seek(-3, IO::SEEK_END)
 
-    0.upto(STRUCTURE_INFO_MAX_SIZE-1) do |i|
-      if @file.read(3).bytes.all?{|byte| 255 == byte}
+    0.upto(STRUCTURE_INFO_MAX_SIZE - 1) do |i|
+      if @file.read(3).bytes.all? { |byte| byte == 255 }
         @database_type = if @file.respond_to?(:getbyte)
                            @file.getbyte
                          else
@@ -406,10 +406,10 @@ class GeoIP
   # * The timezone name, if known
   #
   def read_city(pos, hostname = '', ip = '') #:nodoc:
-    off = pos + (2*@record_length-1) * @database_segments[0]
+    off = pos + (2 * (@record_length - 1)) * @database_segments[0]
     record = atomic_read(FULL_RECORD_LENGTH, off)
 
-    return unless record && record.size == FULL_RECORD_LENGTH
+    return unless (record && record.size == FULL_RECORD_LENGTH)
 
     # The country code is the first byte:
     code = record[0]
@@ -436,7 +436,7 @@ class GeoIP
 
     # Get the latitude/longitude:
     if (record && record[0,3])
-      latitude  = le_to_ui(record[0,3].unpack('C*')) / 10000.0 - 180
+      latitude  = (le_to_ui(record[0,3].unpack('C*')) / 10000.0) - 180
       record = record[3..-1]
 
       @iter_pos += 3 unless @iter_pos.nil?
@@ -460,8 +460,8 @@ class GeoIP
         CountryCode[code] == "US")
 
       dmaarea_combo = le_to_ui(record[0,3].unpack('C*'))
-      dma_code = dmaarea_combo / 1000;
-      area_code = dmaarea_combo % 1000;
+      dma_code = (dmaarea_combo / 1000)
+      area_code = (dmaarea_combo % 1000)
 
       @iter_pos += 3 unless @iter_pos.nil?
     else
@@ -487,7 +487,7 @@ class GeoIP
   end
 
   def lookup_ip(ip_or_hostname) # :nodoc:
-    if ip.kind_of?(String) && ip !~ /^[0-9.]*$/
+    if (ip.kind_of?(String) && ip !~ /^[0-9.]*$/)
       # Lookup IP address, we were given a name
       ip = IPSocket.getaddress(hostname)
       ip = '0.0.0.0' if ip == '::1'
@@ -498,8 +498,8 @@ class GeoIP
 
   # Convert numeric IP address to Integer.
   def iptonum(ip) #:nodoc:
-    if ip.kind_of?(String) &&
-      ip =~ /^([0-9]+)\.([0-9]+)\.([0-9]+)\.([0-9]+)$/
+    if (ip.kind_of?(String) &&
+        ip =~ /^([0-9]+)\.([0-9]+)\.([0-9]+)\.([0-9]+)$/)
       ip = be_to_ui(Regexp.last_match().to_a.slice(1..4))
     end
 
