@@ -1,7 +1,0 @@
-History.txt
-Manifest.txt
-README.rdoc
-Rakefile
-lib/geoip.rb
-test/test_geoip.rb
-test/test_helper.rb
