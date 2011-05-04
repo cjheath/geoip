@@ -461,9 +461,10 @@ class GeoIP
 
     # Convert a big-endian array of numeric bytes to unsigned int
     def be_to_ui(s)   #:nodoc:
-        s.inject(0) { |m, o|
-            (m << 8) + o.to_i
-        }
+        i = 0
+
+        s.each { |b| i = ((i << 8) | (b && 0x0ff)) }
+        return i
     end
 
     # Same for little-endian
