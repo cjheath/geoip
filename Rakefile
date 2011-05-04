@@ -33,10 +33,9 @@ task :default => :test
 
 require 'rake/rdoctask'
 Rake::RDocTask.new do |rdoc|
-  version = File.exist?('VERSION') ? File.read('VERSION') : ""
-
   rdoc.rdoc_dir = 'rdoc'
-  rdoc.title = "test_project #{version}"
-  rdoc.rdoc_files.include('README*')
+  rdoc.title = "geoip #{GeoIP::VERSION}"
+  rdoc.rdoc_files.include('README.rdoc')
+  rdoc.rdoc_files.include('History.rdoc')
   rdoc.rdoc_files.include('lib/**/*.rb')
 end
