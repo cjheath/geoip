@@ -102,10 +102,7 @@ class GeoIP
     class Country < Struct.new(:request, :ip, :country_code, :country_code2, :country_code3, :country_name, :continent_code)
 
       def to_hash
-        self.class.members.inject({}) do |hash, key|
-          hash[key] = self.send(key)
-          hash
-        end
+        Hash[each_pair.to_a]
       end
 
     end
@@ -114,10 +111,7 @@ class GeoIP
                             :region_name, :city_name, :postal_code, :latitude, :longitude, :dma_code, :area_code, :timezone)
 
       def to_hash
-        self.class.members.inject({}) do |hash, key|
-          hash[key] = self.send(key)
-          hash
-        end
+        Hash[each_pair.to_a]
       end
 
     end
