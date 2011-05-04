@@ -128,7 +128,9 @@ class GeoIP
   end
 
   # The Edition number that identifies which kind of database you've opened
-  attr_reader :databaseType
+  attr_reader :database_type
+
+  alias databaseType database_type
 
   # Open the GeoIP database and determine the file format version.
   #
@@ -141,7 +143,7 @@ class GeoIP
              end
 
     @flags = flags
-    @databaseType = GEOIP_COUNTRY_EDITION
+    @database_type = GEOIP_COUNTRY_EDITION
     @record_length = STANDARD_RECORD_LENGTH
     @file = File.open(filename, 'rb')
 
@@ -168,8 +170,8 @@ class GeoIP
   # * The two-character continent code
   #
   def country(hostname)
-    if (@databaseType == GEOIP_CITY_EDITION_REV0 ||
-        @databaseType == GEOIP_CITY_EDITION_REV1)
+    if (@database_type == GEOIP_CITY_EDITION_REV0 ||
+        @database_type == GEOIP_CITY_EDITION_REV1)
       return city(hostname)
     end
 
@@ -178,9 +180,9 @@ class GeoIP
     # Convert numeric IP address to an integer
     ipnum = iptonum(ip)
 
-    if (@databaseType != GEOIP_COUNTRY_EDITION &&
-        @databaseType != GEOIP_PROXY_EDITION &&
-        @databaseType != GEOIP_NETSPEED_EDITION)
+    if (@database_type != GEOIP_COUNTRY_EDITION &&
+        @database_type != GEOIP_PROXY_EDITION &&
+        @database_type != GEOIP_NETSPEED_EDITION)
       throw "Invalid GeoIP database type, can't look up Country by IP"
     end
 
@@ -224,8 +226,8 @@ class GeoIP
     # Convert numeric IP address to an integer
     ipnum = iptonum(ip)
 
-    if (@databaseType != GEOIP_CITY_EDITION_REV0 &&
-        @databaseType != GEOIP_CITY_EDITION_REV1)
+    if (@database_type != GEOIP_CITY_EDITION_REV0 &&
+        @database_type != GEOIP_CITY_EDITION_REV1)
       throw "Invalid GeoIP database type, can't look up City by IP"
     end
 
@@ -240,7 +242,7 @@ class GeoIP
     # If you're concerned, email me, and I'll send you the test program so
     # you can test whatever IP range you think is causing problems,
     # as I don't care to undertake an exhaustive search of the 32-bit space.
-    unless pos == @databaseSegments[0]
+    unless pos == @database_segments[0]
       read_city(pos, hostname, ip)
     end
   end
@@ -260,13 +262,13 @@ class GeoIP
     # Convert numeric IP address to an integer
     ipnum = iptonum(ip)
 
-    if (@databaseType != GEOIP_ISP_EDITION &&
-        @databaseType != GEOIP_ORG_EDITION)
+    if (@database_type != GEOIP_ISP_EDITION &&
+        @database_type != GEOIP_ORG_EDITION)
       throw "Invalid GeoIP database type, can't look up Organization/ISP by IP"
     end
 
     pos = seek_record(ipnum)
-    off = pos + (2*@record_length-1) * @databaseSegments[0]
+    off = pos + (2*@record_length-1) * @database_segments[0]
 
     record = atomic_read(MAX_ORG_RECORD_LENGTH, off)
     record = record.sub(/\000.*/n, '')
@@ -290,12 +292,12 @@ class GeoIP
     # Convert numeric IP address to an integer
     ipnum = iptonum(ip)
 
-    if (@databaseType != GEOIP_ASNUM_EDITION)
+    if (@database_type != GEOIP_ASNUM_EDITION)
       throw "Invalid GeoIP database type, can't look up ASN by IP"
     end
 
     pos = seek_record(ipnum);
-    off = pos + (2 * (@record_length - 1)) * @databaseSegments[0]
+    off = pos + (2 * (@record_length - 1)) * @database_segments[0]
 
     record = atomic_read(MAX_ASN_RECORD_LENGTH, off)
     record = record.sub(/\000.*/n, '')
@@ -318,12 +320,12 @@ class GeoIP
   def each
     return enum_for unless block_given?
 
-    if (@databaseType != GEOIP_CITY_EDITION_REV0 &&
-        @databaseType != GEOIP_CITY_EDITION_REV1)
+    if (@database_type != GEOIP_CITY_EDITION_REV0 &&
+        @database_type != GEOIP_CITY_EDITION_REV1)
       throw "Invalid GeoIP database type, can't iterate thru non-City database"
     end
 
-    @iter_pos = @databaseSegments[0] + 1
+    @iter_pos = @database_segments[0] + 1
     num = 0
 
     until ((rec = read_city(@iter_pos)).nil?)
@@ -343,33 +345,33 @@ class GeoIP
 
     0.upto(STRUCTURE_INFO_MAX_SIZE-1) do |i|
       if @file.read(3).bytes.all?{|byte| 255 == byte}
-        @databaseType = if @file.respond_to?(:getbyte)
-                          @file.getbyte
-                        else
-                          @file.getc
-                        end
+        @database_type = if @file.respond_to?(:getbyte)
+                           @file.getbyte
+                         else
+                           @file.getc
+                         end
 
-        @databaseType -= 105 if @databaseType >= 106
+        @database_type -= 105 if @database_type >= 106
 
-        if (@databaseType == GEOIP_REGION_EDITION_REV0)
+        if (@database_type == GEOIP_REGION_EDITION_REV0)
           # Region Edition, pre June 2003
-          @databaseSegments = [STATE_BEGIN_REV0]
-        elsif (@databaseType == GEOIP_REGION_EDITION_REV1)
+          @database_segments = [STATE_BEGIN_REV0]
+        elsif (@database_type == GEOIP_REGION_EDITION_REV1)
           # Region Edition, post June 2003
-          @databaseSegments = [STATE_BEGIN_REV1]
-        elsif (@databaseType == GEOIP_CITY_EDITION_REV0 ||
-               @databaseType == GEOIP_CITY_EDITION_REV1 ||
-               @databaseType == GEOIP_ORG_EDITION ||
-               @databaseType == GEOIP_ISP_EDITION ||
-               @databaseType == GEOIP_ASNUM_EDITION)
+          @database_segments = [STATE_BEGIN_REV1]
+        elsif (@database_type == GEOIP_CITY_EDITION_REV0 ||
+               @database_type == GEOIP_CITY_EDITION_REV1 ||
+               @database_type == GEOIP_ORG_EDITION ||
+               @database_type == GEOIP_ISP_EDITION ||
+               @database_type == GEOIP_ASNUM_EDITION)
 
           # City/Org Editions have two segments, read offset of second segment
-          @databaseSegments = [0]
+          @database_segments = [0]
           sr = @file.read(3).unpack("C*")
-          @databaseSegments[0] += le_to_ui(sr)
+          @database_segments[0] += le_to_ui(sr)
 
-          if (@databaseType == GEOIP_ORG_EDITION ||
-              @databaseType == GEOIP_ISP_EDITION)
+          if (@database_type == GEOIP_ORG_EDITION ||
+              @database_type == GEOIP_ISP_EDITION)
             @record_length = 4
           end
         end
@@ -380,10 +382,10 @@ class GeoIP
       end
     end
 
-    if (@databaseType == GEOIP_COUNTRY_EDITION ||
-        @databaseType == GEOIP_PROXY_EDITION ||
-        @databaseType == GEOIP_NETSPEED_EDITION)
-      @databaseSegments = [COUNTRY_BEGIN]
+    if (@database_type == GEOIP_COUNTRY_EDITION ||
+        @database_type == GEOIP_PROXY_EDITION ||
+        @database_type == GEOIP_NETSPEED_EDITION)
+      @database_segments = [COUNTRY_BEGIN]
     end
   end
 
@@ -404,7 +406,7 @@ class GeoIP
   # * The timezone name, if known
   #
   def read_city(pos, hostname = '', ip = '') #:nodoc:
-    off = pos + (2*@record_length-1) * @databaseSegments[0]
+    off = pos + (2*@record_length-1) * @database_segments[0]
     record = atomic_read(FULL_RECORD_LENGTH, off)
 
     return unless record && record.size == FULL_RECORD_LENGTH
@@ -454,7 +456,7 @@ class GeoIP
     # UNTESTED
     if (record &&
         record[0,3] &&
-        @databaseType == GEOIP_CITY_EDITION_REV1 &&
+        @database_type == GEOIP_CITY_EDITION_REV1 &&
         CountryCode[code] == "US")
 
       dmaarea_combo = le_to_ui(record[0,3].unpack('C*'))
@@ -517,7 +519,7 @@ class GeoIP
       buf.slice!(0...@record_length) if ((ipnum & mask) != 0)
       offset = le_to_ui(buf[0...@record_length].unpack("C*"))
 
-      return offset if (offset >= @databaseSegments[0])
+      return offset if (offset >= @database_segments[0])
 
       mask >>= 1
     end
