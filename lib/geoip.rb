@@ -268,7 +268,7 @@ class GeoIP
     end
 
     pos = seek_record(ipnum)
-    off = pos + (2 * (@record_length-1)) * @database_segments[0]
+    off = pos + (2*@record_length - 1) * @database_segments[0]
 
     record = atomic_read(MAX_ORG_RECORD_LENGTH, off)
     record = record.sub(/\000.*/n, '')
@@ -297,7 +297,7 @@ class GeoIP
     end
 
     pos = seek_record(ipnum)
-    off = pos + (2 * (@record_length - 1)) * @database_segments[0]
+    off = pos + (2*@record_length - 1) * @database_segments[0]
 
     record = atomic_read(MAX_ASN_RECORD_LENGTH, off)
     record = record.sub(/\000.*/n, '')
