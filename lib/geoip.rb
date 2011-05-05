@@ -406,7 +406,7 @@ class GeoIP
   # * The timezone name, if known
   #
   def read_city(pos, hostname = '', ip = '') #:nodoc:
-    off = pos + (2 * (@record_length - 1)) * @database_segments[0]
+    off = pos + (2*@record_length - 1) * @database_segments[0]
     record = atomic_read(FULL_RECORD_LENGTH, off)
 
     return unless (record && record.size == FULL_RECORD_LENGTH)
@@ -518,7 +518,9 @@ class GeoIP
       buf.slice!(0...@record_length) if ((ipnum & mask) != 0)
       offset = le_to_ui(buf[0...@record_length].unpack("C*"))
 
-      return offset if (offset >= @database_segments[0])
+      if (offset >= @database_segments[0])
+        return offset
+      end
 
       mask >>= 1
     end
