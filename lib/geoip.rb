@@ -487,13 +487,12 @@ class GeoIP
   end
 
   def lookup_ip(ip_or_hostname) # :nodoc:
-    if (ip.kind_of?(String) && ip !~ /^[0-9.]*$/)
-      # Lookup IP address, we were given a name
-      ip = IPSocket.getaddress(hostname)
-      ip = '0.0.0.0' if ip == '::1'
-    end
+    return ip_or_hostname unless (ip_or_hostname.kind_of?(String) && ip_or_hostname !~ /^[0-9.]*$/)
 
-    return ip
+    # Lookup IP address, we were given a name
+    ip = IPSocket.getaddress(ip_or_hostname)
+    ip = '0.0.0.0' if ip == '::1'
+    ip
   end
 
   # Convert numeric IP address to Integer.
@@ -532,7 +531,7 @@ class GeoIP
   def be_to_ui(s) #:nodoc:
     i = 0
 
-    s.each { |b| i = ((i << 8) | (b && 0x0ff)) }
+    s.each { |b| i = ((i << 8) | (b.to_i & 0x0ff)) }
     return i
   end
 
