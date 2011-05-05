@@ -1,13 +1,6 @@
 #!/usr/bin/env ruby
 
 require 'rubygems'
-begin
-  require 'newgem'
-rescue LoadError
-  puts "\n\nGenerating the website requires the newgem RubyGem"
-  puts "Install: gem install newgem\n\n"
-  exit(1)
-end
 require 'redcloth'
 require 'syntax/convertors/html'
 require 'erb'
