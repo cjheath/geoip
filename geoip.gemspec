@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = %q{geoip}
-  s.version = "1.1.0"
+  s.version = "1.1.1"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Clifford Heath", "Roland Moriz"]
-  s.date = %q{2011-05-05}
+  s.date = %q{2011-05-06}
   s.default_executable = %q{geoip}
   s.description = %q{GeoIP searches a GeoIP database for a given host or IP address, and
 returns information about the country where the IP address is allocated,
