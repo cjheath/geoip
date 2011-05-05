@@ -1,0 +1,23 @@
+#!/usr/bin/env ruby
+
+lib_dir = File.expand_path(File.join(File.dirname(__FILE__),'..','lib'))
+$LOAD_PATH << lib_dir unless $LOAD_PATH.include?(lib_dir)
+
+require 'geoip'
+
+data = '/usr/share/GeoIP/GeoIP.dat'
+data = ARGV.shift if ARGV[0] =~ /\.dat\Z/
+
+geoip = GeoIP.new data
+req = ([GeoIP::GEOIP_CITY_EDITION_REV1, GeoIP::GEOIP_CITY_EDITION_REV0].include?(geoip.databaseType)) ? :city : :country
+
+if ARGV.size > 0
+  ARGV.each { |a| p geoip.send(req, a) }
+else
+  while (STDIN.isatty && print('geoip> '); ip = gets)
+    ip.chomp!
+    result = geoip.send(req, ip)
+    p result
+  end
+  STDIN.isatty && puts
+end

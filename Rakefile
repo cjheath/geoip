@@ -1,23 +1,57 @@
 require 'rubygems'
-gem 'hoe', '>= 2.1.0'
-require 'hoe'
-require 'fileutils'
+require 'rake'
+
+require 'jeweler'
 require './lib/geoip'
 
-Hoe.plugin :newgem
-Hoe.plugin :website
+Jeweler::Tasks.new do |gem|
+  # gem is a Gem::Specification... see http://docs.rubygems.org/read/chapter/20 for more options
+  gem.name = "geoip"
+  gem.version = GeoIP::VERSION
+  gem.homepage = "http://github.com/cjheath/geoip"
+  gem.license = "MIT"
+  gem.summary = %Q{GeoIP searches a GeoIP database for a given host or IP address, and returns information about the country where the IP address is allocated, and the city, ISP and other information, if you have that database version.}
+  gem.description = %Q{GeoIP searches a GeoIP database for a given host or IP address, and
+returns information about the country where the IP address is allocated,
+and the city, ISP and other information, if you have that database version.}
+  gem.email = %w[clifford.heath@gmail.com rmoriz@gmail.com]
+  gem.authors = ["Clifford Heath", "Roland Moriz"]
+  # Include your dependencies below. Runtime dependencies are required when using your gem,
+  # and development dependencies are only needed for development (ie running rake tasks, tests, etc)
+  #  gem.add_runtime_dependency 'jabber4r', '> 0.1'
+  #  gem.add_development_dependency 'rspec', '> 1.2.3'
+end
+Jeweler::RubygemsDotOrgTasks.new
 
-# Generate all the Rake tasks
-# Run 'rake -T' to see list of generated tasks (from gem root directory)
-$hoe = Hoe.spec 'geoip' do
-  self.developer 'Clifford Heath', 'clifford.heath@gmail.com'
-  self.developer 'Roland Moriz', 'rmoriz@gmail.com'
-  self.rubyforge_name       = self.name # TODO this is default value
+require 'rake/testtask'
+Rake::TestTask.new(:test) do |test|
+  test.libs << 'lib' << 'test'
+  test.pattern = 'test/**/test_*.rb'
+  test.verbose = true
+end
+task :default => :test
+
+require 'rake/rdoctask'
+Rake::RDocTask.new do |rdoc|
+  rdoc.rdoc_dir = 'rdoc'
+  rdoc.title = "geoip #{GeoIP::VERSION}"
+  rdoc.rdoc_files.include('README.rdoc')
+  rdoc.rdoc_files.include('History.rdoc')
+  rdoc.rdoc_files.include('lib/**/*.rb')
 end
 
-require 'newgem/tasks'
-Dir['tasks/**/*.rake'].each { |t| load t }
+desc 'Generate website files'
+task :website_generate do
+  sh %q{ruby script/txt2html website/index.txt > website/index.html}
+end
 
-# TODO - want other tests/tasks run by default? Add them to the list
-# remove_task :default
-# task :default => [:spec, :features]
+desc 'Upload website files via rsync'
+task :website_upload do
+  local_dir  = 'website'
+  website_config = YAML.load(File.read("config/website.yml"))
+  host       = website_config["host"]
+  host       = host ? "#{host}:" : ""
+  remote_dir = website_config["remote_dir"]
+  sh %{rsync -aCv #{local_dir}/ #{host}#{remote_dir}}
+end
+
