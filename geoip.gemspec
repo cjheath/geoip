@@ -5,11 +5,12 @@
 
 Gem::Specification.new do |s|
   s.name = %q{geoip}
-  s.version = "1.0.0"
+  s.version = "1.1.0"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Clifford Heath", "Roland Moriz"]
-  s.date = %q{2011-05-04}
+  s.date = %q{2011-05-05}
+  s.default_executable = %q{geoip}
   s.description = %q{GeoIP searches a GeoIP database for a given host or IP address, and
 returns information about the country where the IP address is allocated,
 and the city, ISP and other information, if you have that database version.}
@@ -44,7 +45,7 @@ and the city, ISP and other information, if you have that database version.}
   s.homepage = %q{http://github.com/cjheath/geoip}
   s.licenses = ["MIT"]
   s.require_paths = ["lib"]
-  s.rubygems_version = %q{1.7.2}
+  s.rubygems_version = %q{1.3.7}
   s.summary = %q{GeoIP searches a GeoIP database for a given host or IP address, and returns information about the country where the IP address is allocated, and the city, ISP and other information, if you have that database version.}
   s.test_files = [
     "test/test_geoip.rb",
@@ -52,6 +53,7 @@ and the city, ISP and other information, if you have that database version.}
   ]
 
   if s.respond_to? :specification_version then
+    current_version = Gem::Specification::CURRENT_SPECIFICATION_VERSION
     s.specification_version = 3
 
     if Gem::Version.new(Gem::VERSION) >= Gem::Version.new('1.2.0') then
