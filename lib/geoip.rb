@@ -487,7 +487,7 @@ class GeoIP
   end
 
   def lookup_ip(ip_or_hostname) # :nodoc:
-    return ip_or_hostname unless (ip_or_hostname.kind_of?(String) && ip_or_hostname !~ /^[0-9.]*$/)
+    return ip_or_hostname unless (ip_or_hostname.kind_of?(String) && ip_or_hostname !~ /^[0-9.]+$/)
 
     # Lookup IP address, we were given a name
     ip = IPSocket.getaddress(ip_or_hostname)
@@ -500,6 +500,8 @@ class GeoIP
     if (ip.kind_of?(String) &&
         ip =~ /^([0-9]+)\.([0-9]+)\.([0-9]+)\.([0-9]+)$/)
       ip = be_to_ui(Regexp.last_match().to_a.slice(1..4))
+    else
+      ip = ip.to_i
     end
 
     return ip
