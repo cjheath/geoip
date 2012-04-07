@@ -9,7 +9,7 @@ Jeweler::Tasks.new do |gem|
   gem.name = "geoip"
   gem.version = GeoIP::VERSION
   gem.homepage = "http://github.com/cjheath/geoip"
-  gem.license = "MIT"
+  gem.license = "GPL"
   gem.summary = %Q{GeoIP searches a GeoIP database for a given host or IP address, and returns information about the country where the IP address is allocated, and the city, ISP and other information, if you have that database version.}
   gem.description = %Q{GeoIP searches a GeoIP database for a given host or IP address, and
 returns information about the country where the IP address is allocated,
