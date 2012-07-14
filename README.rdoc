@@ -13,6 +13,11 @@ and the city, ISP and other information, if you have that database version.
 Includes support for ASN data files, thanks to Roland Matiz.
 This release adds support for timezone names, thanks to Tonni Aagesen.
 
+If you have required 'io/extra' and have IO#pread, cross-process file-descriptor sharing is enabled.
+Each GeoIP instance keeps the file descriptor open, with a Mutex for thread-safety.
+You should consider this if your process will fork without exec, as
+[modrails does](http://www.modrails.com/documentation/Users%20guide%20Nginx.html#_smart_spawning_gotcha_1_unintential_file_descriptor_sharing).
+
 == SYNOPSIS:
 
   require 'geoip'
@@ -25,9 +30,9 @@ This release adds support for timezone names, thanks to Tonni Aagesen.
   c.to_hash
   => {:country_code3=>"FIN", :country_name=>"Finland", :continent_code=>"EU", :request=>"www.nokia.com", :country_code=>69, :country_code2=>"FI", :ip=>"147.243.3.83"}
 
-  Returned values are the requested hostname, the IP address as a dotted quad,
-  Maxmind's country code, the ISO3166-1 alpha-2 country code, the ISO3166-2 alpha-3
-  country code, the ISO3166 country name, and the continent code.
+Returned values are the requested hostname, the IP address as a dotted quad,
+Maxmind's country code, the ISO3166-1 alpha-2 country code, the ISO3166-2 alpha-3
+country code, the ISO3166 country name, and the continent code.
 
   # Use the city database:
   c = GeoIP.new('GeoLiteCity.dat').city('github.com')
@@ -40,15 +45,15 @@ This release adds support for timezone names, thanks to Tonni Aagesen.
   GeoIP.new('GeoCity.dat').city('github.com')
   => ["github.com", "207.97.227.239", "US", "USA", "United States", "NA", "CA", "San Francisco", "94110", 37.7484, -122.4156, 807, 415, "America/Los_Angeles"]
 
-  Returned values are the requested hostname, the IP address as a dotted quad,
-  the ISO3166-1 alpha-2 country code, the ISO3166-2 alpha-3 country code, the
-  ISO3166 country name, the continent code, the region (state or territory) name,
-  city name, postal_code/zipcode, latitude, longitude, USA DMA code, USA area code,
-  timezone name.
+Returned values are the requested hostname, the IP address as a dotted quad,
+the ISO3166-1 alpha-2 country code, the ISO3166-2 alpha-3 country code, the
+ISO3166 country name, the continent code, the region (state or territory) name,
+city name, postal_code/zipcode, latitude, longitude, USA DMA code, USA area code,
+timezone name.
 
-  Result arrays from both city and country have mixed-in accessor methods as appropriate:
-  request, ip, country_code, country_code2, country_code3, country_name, continent_code,
-  region_name, city_name, postal_code, latitude, longitude, dma_code, area_code, timezone
+Result arrays from both city and country have mixed-in accessor methods as appropriate:
+request, ip, country_code, country_code2, country_code3, country_name, continent_code,
+region_name, city_name, postal_code, latitude, longitude, dma_code, area_code, timezone
 
   GeoIP.new('GeoIPASNum.dat').asn("www.fsb.ru")
   => ["AS8342", "RTComm.RU Autonomous System"]
