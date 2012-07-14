@@ -16,7 +16,7 @@ This release adds support for timezone names, thanks to Tonni Aagesen.
 If you have required 'io/extra' and have IO#pread, cross-process file-descriptor sharing is enabled.
 Each GeoIP instance keeps the file descriptor open, with a Mutex for thread-safety.
 You should consider this if your process will fork without exec, as
-modrails does :: http://www.modrails.com/documentation/Users%20guide%20Nginx.html#_smart_spawning_gotcha_1_unintential_file_descriptor_sharing
+{modrails does}[http://www.modrails.com/documentation/Users%20guide%20Nginx.html#_smart_spawning_gotcha_1_unintential_file_descriptor_sharing]
 
 == SYNOPSIS:
 
