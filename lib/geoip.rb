@@ -54,7 +54,7 @@ require 'yaml'
 class GeoIP
 
   # The GeoIP GEM version number
-  VERSION = "1.1.2"
+  VERSION = "1.2.0"
 
   # The +data/+ directory for geoip
   DATA_DIR = File.expand_path(File.join(File.dirname(__FILE__),'..','data','geoip'))
@@ -172,20 +172,20 @@ class GeoIP
   #
   def country(hostname)
     if (@database_type == GEOIP_CITY_EDITION_REV0 ||
-        @database_type == GEOIP_CITY_EDITION_REV1)
+        @database_type == GEOIP_CITY_EDITION_REV1 ||
+        @database_type == GEOIP_CITY_EDITION_REV1_V6)
       return city(hostname)
     end
-
-    ip = lookup_ip(hostname)
-
-    # Convert numeric IP address to an integer
-    ipnum = iptonum(ip)
 
     if (@database_type != GEOIP_COUNTRY_EDITION &&
         @database_type != GEOIP_PROXY_EDITION &&
         @database_type != GEOIP_NETSPEED_EDITION)
       throw "Invalid GeoIP database type, can't look up Country by IP"
     end
+
+    ip = lookup_ip(hostname)
+
+    ipnum = iptonum(ip)           # Convert numeric IP address to an integer
 
     code = (seek_record(ipnum) - COUNTRY_BEGIN)
 
@@ -224,15 +224,17 @@ class GeoIP
   def city(hostname)
     ip = lookup_ip(hostname)
 
-    # Convert numeric IP address to an integer
-    ipnum = iptonum(ip)
-
-    if (@database_type != GEOIP_CITY_EDITION_REV0 &&
-        @database_type != GEOIP_CITY_EDITION_REV1)
+    if (@database_type == GEOIP_CITY_EDITION_REV0 ||
+        @database_type == GEOIP_CITY_EDITION_REV1)
+      # Convert numeric IP address to an integer
+      ipnum = iptonum(ip)
+      pos = seek_record(ipnum)
+    elsif (@database_type == GEOIP_CITY_EDITION_REV1_V6)
+      ipaddr = IPAddr.new ip
+      pos = seek_record_v6(ipaddr.to_i)
+    else
       throw "Invalid GeoIP database type, can't look up City by IP"
     end
-
-    pos = seek_record(ipnum)
 
     # This next statement was added to MaxMind's C version after it was
     # rewritten in Ruby. It prevents unassigned IP addresses from returning
@@ -245,30 +247,6 @@ class GeoIP
     # as I don't care to undertake an exhaustive search of the 32-bit space.
     unless pos == @database_segments[0]
       read_city(pos, hostname, ip)
-    end
-  end
-
-  def cityv6(ipv6)
-
-    if (@database_type != GEOIP_CITY_EDITION_REV1_V6)
-      throw "Invalid GeoIP database type, can't look up City by IPv6"
-    end
-
-    ipaddr = IPAddr.new ipv6
-
-    pos = seek_record_v6(ipaddr.to_i)
-
-    # This next statement was added to MaxMind's C version after it was
-    # rewritten in Ruby. It prevents unassigned IP addresses from returning
-    # bogus data.  There was concern over whether the changes to an
-    # application's behaviour were always correct, but this has been tested
-    # using an exhaustive search of the top 16 bits of the IP address space.
-    # The records where the change takes effect contained *no* valid data.
-    # If you're concerned, email me, and I'll send you the test program so
-    # you can test whatever IP range you think is causing problems,
-    # as I don't care to undertake an exhaustive search of the 32-bit space.
-    unless pos == @database_segments[0]
-      read_city(pos, ipv6, ipv6)
     end
   end
 
@@ -513,9 +491,11 @@ class GeoIP
   end
 
   def lookup_ip(ip_or_hostname) # :nodoc:
-    return ip_or_hostname unless (ip_or_hostname.kind_of?(String) && ip_or_hostname !~ /^[0-9.]+$/)
+    if !ip_or_hostname.kind_of?(String) or ip_or_hostname =~ /^[0-9.]+$/
+      return ip_or_hostname
+    end
 
-    # Lookup IP address, we were given a name
+    # Lookup IP address, we were given a name or IPv6 address
     ip = IPSocket.getaddress(ip_or_hostname)
     ip = '0.0.0.0' if ip == '::1'
     ip

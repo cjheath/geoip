@@ -1,6 +1,6 @@
-== 2.0.0 2012-10-16
+== 1.2.0 2012-10-17
 
-* Added IPv6 support
+* Added support for GeoLiteCityv6 IPv6 database type
 
 == 0.8.1 2009-06-04
 
