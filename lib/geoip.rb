@@ -87,6 +87,7 @@ class GeoIP
   GEOIP_PROXY_EDITION = 8
   GEOIP_ASNUM_EDITION = 9
   GEOIP_NETSPEED_EDITION = 10
+  GEOIP_CITY_EDITION_REV1_V6 = 30
 
   COUNTRY_BEGIN = 16776960          #:nodoc:
   STATE_BEGIN_REV0 = 16700000       #:nodoc:
@@ -247,6 +248,30 @@ class GeoIP
     end
   end
 
+  def cityv6(ipv6)
+
+    if (@database_type != GEOIP_CITY_EDITION_REV1_V6)
+      throw "Invalid GeoIP database type, can't look up City by IPv6"
+    end
+
+    ipaddr = IPAddr.new ipv6
+
+    pos = seek_record_v6(ipaddr.to_i)
+
+    # This next statement was added to MaxMind's C version after it was
+    # rewritten in Ruby. It prevents unassigned IP addresses from returning
+    # bogus data.  There was concern over whether the changes to an
+    # application's behaviour were always correct, but this has been tested
+    # using an exhaustive search of the top 16 bits of the IP address space.
+    # The records where the change takes effect contained *no* valid data.
+    # If you're concerned, email me, and I'll send you the test program so
+    # you can test whatever IP range you think is causing problems,
+    # as I don't care to undertake an exhaustive search of the 32-bit space.
+    unless pos == @database_segments[0]
+      read_city(pos, ipv6, ipv6)
+    end
+  end
+
   # Search a ISP GeoIP database for the specified host, returning the ISP
   # Not all GeoIP databases contain ISP information.
   # Check http://maxmind.com
@@ -361,6 +386,7 @@ class GeoIP
           @database_segments = [STATE_BEGIN_REV1]
         elsif (@database_type == GEOIP_CITY_EDITION_REV0 ||
                @database_type == GEOIP_CITY_EDITION_REV1 ||
+               @database_type == GEOIP_CITY_EDITION_REV1_V6 ||
                @database_type == GEOIP_ORG_EDITION ||
                @database_type == GEOIP_ISP_EDITION ||
                @database_type == GEOIP_ASNUM_EDITION)
@@ -526,6 +552,29 @@ class GeoIP
 
       mask >>= 1
     end
+  end
+
+  def seek_record_v6(ipnum)
+
+    # Binary search in the file.
+    # Records are pairs of little-endian integers, each of @record_length.
+    offset = 0
+    mask = 1 << 127
+
+    127.downto(0) do |depth|
+      off = (@record_length * 2 * offset)
+      buf = atomic_read(@record_length * 2, off)
+
+      buf.slice!(0...@record_length) if ((ipnum & mask) != 0)
+      offset = le_to_ui(buf[0...@record_length].unpack("C*"))
+
+      if (offset >= @database_segments[0])
+        return offset
+      end
+
+      mask >>= 1
+    end
+
   end
 
   # Convert a big-endian array of numeric bytes to unsigned int.
