@@ -9,7 +9,7 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Clifford Heath", "Roland Moriz"]
-  s.date = "2012-01-26"
+  s.date = "2012-10-16"
   s.description = "GeoIP searches a GeoIP database for a given host or IP address, and\nreturns information about the country where the IP address is allocated,\nand the city, ISP and other information, if you have that database version."
   s.email = ["clifford.heath@gmail.com", "rmoriz@gmail.com"]
   s.executables = ["geoip"]
@@ -40,9 +40,9 @@ Gem::Specification.new do |s|
     "website/template.rhtml"
   ]
   s.homepage = "http://github.com/cjheath/geoip"
-  s.licenses = ["MIT"]
+  s.licenses = ["GPL"]
   s.require_paths = ["lib"]
-  s.rubygems_version = "1.8.10"
+  s.rubygems_version = "1.8.24"
   s.summary = "GeoIP searches a GeoIP database for a given host or IP address, and returns information about the country where the IP address is allocated, and the city, ISP and other information, if you have that database version."
 
   if s.respond_to? :specification_version then
