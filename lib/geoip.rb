@@ -48,6 +48,11 @@ begin
 rescue LoadError
   # oh well, hope they're not forking after initializing
 end
+begin
+  require 'ipaddr'  # Needed for IPv6 support
+rescue LoadError
+  # Won't work for an IPv6 database
+end
 
 require 'yaml'
 
