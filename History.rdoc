@@ -1,3 +1,7 @@
+== 2.0.0 2012-10-16
+
+* Added IPv6 support
+
 == 0.8.1 2009-06-04
 
 * Added GeoIP#close method to close the file descriptor
