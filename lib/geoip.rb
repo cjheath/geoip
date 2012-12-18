@@ -92,6 +92,7 @@ class GeoIP
   GEOIP_PROXY_EDITION = 8
   GEOIP_ASNUM_EDITION = 9
   GEOIP_NETSPEED_EDITION = 10
+  GEOIP_COUNTRY_EDITION_V6 = 12
   GEOIP_CITY_EDITION_REV1_V6 = 30
 
   COUNTRY_BEGIN = 16776960          #:nodoc:
@@ -182,17 +183,19 @@ class GeoIP
       return city(hostname)
     end
 
-    if (@database_type != GEOIP_COUNTRY_EDITION &&
-        @database_type != GEOIP_PROXY_EDITION &&
-        @database_type != GEOIP_NETSPEED_EDITION)
+    ip = lookup_ip(hostname)
+    if (@database_type == GEOIP_COUNTRY_EDITION ||
+        @database_type == GEOIP_PROXY_EDITION ||
+        @database_type == GEOIP_NETSPEED_EDITION)
+        # Convert numeric IP address to an integer
+        ipnum = iptonum(ip)
+        code = (seek_record(ipnum) - COUNTRY_BEGIN)
+    elsif @database_type == GEOIP_COUNTRY_EDITION_V6
+      ipaddr = IPAddr.new ip
+      code = (seek_record_v6(ipaddr.to_i) - COUNTRY_BEGIN)
+    else
       throw "Invalid GeoIP database type, can't look up Country by IP"
     end
-
-    ip = lookup_ip(hostname)
-
-    ipnum = iptonum(ip)           # Convert numeric IP address to an integer
-
-    code = (seek_record(ipnum) - COUNTRY_BEGIN)
 
     Country.new(
       hostname,                   # Requested hostname
@@ -393,6 +396,7 @@ class GeoIP
 
     if (@database_type == GEOIP_COUNTRY_EDITION ||
         @database_type == GEOIP_PROXY_EDITION ||
+        @database_type == GEOIP_COUNTRY_EDITION_V6 ||
         @database_type == GEOIP_NETSPEED_EDITION)
       @database_segments = [COUNTRY_BEGIN]
     end
