@@ -443,7 +443,7 @@ class GeoIP
 
     # Get the postal code:
     postal_code = spl[2]
-    @iter_pos += (postal_code.size + 1) unless @iter_pos.nil?
+    @iter_pos += (postal_code.size + 1) unless @iter_pos.nil? || postal_code.nil?
 
     record = spl[3]
 
