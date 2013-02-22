@@ -82,6 +82,10 @@ class GeoIP
   # Hash of the timezone codes mapped to timezone name, per zoneinfo
   TimeZone = YAML.load_file(File.join(DATA_DIR,'time_zone.yml'))
 
+  # Hash of region names mapped by country ISO2 code and region code
+  # See http://dev.maxmind.com/static/csv/codes/maxmind/region.csv
+  RegionNames = YAML.load_file(File.join(DATA_DIR,'region_names.yml'))
+
   GEOIP_COUNTRY_EDITION = 1
   GEOIP_CITY_EDITION_REV1 = 2
   GEOIP_REGION_EDITION_REV1 = 3
@@ -120,7 +124,8 @@ class GeoIP
   end
 
   class City < Struct.new(:request, :ip, :country_code2, :country_code3, :country_name, :continent_code,
-                          :region_name, :city_name, :postal_code, :latitude, :longitude, :dma_code, :area_code, :timezone)
+                          :region_name, :city_name, :postal_code, :latitude, :longitude, :dma_code, :area_code,
+                          :timezone, :region_mapped_name)
 
     def to_hash
       Hash[each_pair.to_a]
@@ -495,7 +500,8 @@ class GeoIP
       longitude,
       dma_code,
       area_code,
-      (TimeZone["#{CountryCode[code]}#{region}"] || TimeZone["#{CountryCode[code]}"])
+      (TimeZone["#{CountryCode[code]}#{region}"] || TimeZone["#{CountryCode[code]}"]),
+      lookup_region_name(CountryCode[code], region)
     )
   end
 
@@ -508,6 +514,12 @@ class GeoIP
     ip = IPSocket.getaddress(ip_or_hostname)
     ip = '0.0.0.0' if ip == '::1'
     ip
+  end
+
+  def lookup_region_name(country_iso2, region_code)
+    region = RegionNames[country_iso2][region_code] rescue nil
+    region = '-' unless region
+    region
   end
 
   # Convert numeric IP address to Integer.
