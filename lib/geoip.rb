@@ -137,6 +137,9 @@ class GeoIP
   # The Edition number that identifies which kind of database you've opened
   attr_reader :database_type
 
+  # An IP that is used instead of local IPs
+  attr_accessor :local_ip
+
   alias databaseType database_type
 
   # Open the GeoIP database and determine the file format version.
@@ -500,6 +503,10 @@ class GeoIP
   end
 
   def lookup_ip(ip_or_hostname) # :nodoc:
+    if is_local?(ip_or_hostname) && @local_ip
+      ip_or_hostname = @local_ip
+    end
+
     if !ip_or_hostname.kind_of?(String) or ip_or_hostname =~ /^[0-9.]+$/
       return ip_or_hostname
     end
@@ -508,6 +515,10 @@ class GeoIP
     ip = IPSocket.getaddress(ip_or_hostname)
     ip = '0.0.0.0' if ip == '::1'
     ip
+  end
+
+  def is_local?(ip_or_hostname) #:nodoc
+    ["127.0.0.1", "localhost"].include? ip_or_hostname
   end
 
   # Convert numeric IP address to Integer.
