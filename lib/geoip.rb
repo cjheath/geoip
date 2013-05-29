@@ -138,7 +138,7 @@ class GeoIP
   attr_reader :database_type
 
   # An IP that is used instead of local IPs
-  attr_accessor :local_ip
+  attr_accessor :local_ip_alias
 
   alias databaseType database_type
 
@@ -503,8 +503,8 @@ class GeoIP
   end
 
   def lookup_ip(ip_or_hostname) # :nodoc:
-    if is_local?(ip_or_hostname) && @local_ip
-      ip_or_hostname = @local_ip
+    if is_local?(ip_or_hostname) && @local_ip_alias
+      ip_or_hostname = @local_ip_alias
     end
 
     if !ip_or_hostname.kind_of?(String) or ip_or_hostname =~ /^[0-9.]+$/
@@ -517,8 +517,8 @@ class GeoIP
     ip
   end
 
-  def is_local?(ip_or_hostname) #:nodoc
-    ["127.0.0.1", "localhost"].include? ip_or_hostname
+  def is_local?(ip_or_hostname) #:nodoc:
+    ["127.0.0.1", "localhost", "::1", "0000::1", "0:0:0:0:0:0:0:1"].include? ip_or_hostname
   end
 
   # Convert numeric IP address to Integer.
