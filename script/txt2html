@@ -2,9 +2,8 @@
 
 require 'rubygems'
 require 'redcloth'
-require 'syntax/convertors/html'
 require 'erb'
-require File.dirname(__FILE__) + '/../lib/geoip.rb'
+require './' + File.dirname(__FILE__) + '/../lib/geoip.rb'
 
 version  = GeoIP::VERSION
 download = 'http://rubyforge.org/projects/geoip'
@@ -15,9 +14,9 @@ class Fixnum
     return 'th' if (10..19).include?(self % 100)
     # others
     case self % 10
-    when 1: return 'st'
-    when 2: return 'nd'
-    when 3: return 'rd'
+    when 1; return 'st'
+    when 2; return 'nd'
+    when 3; return 'rd'
     else    return 'th'
     end
   end
