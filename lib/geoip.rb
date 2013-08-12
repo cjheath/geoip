@@ -78,6 +78,9 @@ class GeoIP
   # ordered by GeoIP ID
   CountryContinent = YAML.load_file(File.join(DATA_DIR,'country_continent.yml'))
 
+  # Hash of the regions names
+  RegionName = YAML.load_file(File.join(DATA_DIR,'region.yml'))
+
   # Hash of the timezone codes mapped to timezone name, per zoneinfo
   TimeZone = YAML.load_file(File.join(DATA_DIR,'time_zone.yml'))
 
@@ -119,7 +122,7 @@ class GeoIP
   end
 
   class City < Struct.new(:request, :ip, :country_code2, :country_code3, :country_name, :continent_code,
-                          :region_name, :city_name, :postal_code, :latitude, :longitude, :dma_code, :area_code, :timezone)
+                          :region_code, :region_name, :city_name, :postal_code, :latitude, :longitude, :dma_code, :area_code, :timezone)
 
     def to_hash
       Hash[each_pair.to_a]
@@ -251,7 +254,7 @@ class GeoIP
     # bogus data.  There was concern over whether the changes to an
     # application's behaviour were always correct, but this has been tested
     # using an exhaustive search of the top 16 bits of the IP address space.
-    # The records where the change takes effect contained *no* valid data. 
+    # The records where the change takes effect contained *no* valid data.
     # If you're concerned, email me, and I'll send you the test program so
     # you can test whatever IP range you think is causing problems,
     # as I don't care to undertake an exhaustive search of the 32-bit space.
@@ -490,7 +493,8 @@ class GeoIP
       CountryCode3[code],         # ISO3166-2 code
       CountryName[code],          # Country name, per IS03166
       CountryContinent[code],     # Continent code.
-      region,                     # Region name
+      region,                     # Region code
+      RegionName[CountryCode[code]][region],   # Region name
       city,                       # City name
       postal_code,                # Postal code
       latitude,
