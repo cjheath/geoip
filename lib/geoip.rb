@@ -118,6 +118,15 @@ class GeoIP
 
   end
 
+  class Region < Struct.new(:request, :ip, :country_code2, :country_code3, :country_name, :continent_code,
+                            :region_name, :timezone)
+
+    def to_hash
+      Hash[each_pair.to_a]
+    end
+
+  end
+
   class City < Struct.new(:request, :ip, :country_code2, :country_code3, :country_name, :continent_code,
                           :region_name, :city_name, :postal_code, :latitude, :longitude, :dma_code, :area_code, :timezone)
 
@@ -185,6 +194,11 @@ class GeoIP
       return city(hostname)
     end
 
+    if (@database_type == GEOIP_REGION_EDITION_REV0 ||
+        @database_type == GEOIP_REGION_EDITION_REV1)
+      return region(hostname)
+    end
+
     ip = lookup_ip(hostname)
     if (@database_type == GEOIP_COUNTRY_EDITION ||
         @database_type == GEOIP_PROXY_EDITION ||
@@ -208,6 +222,42 @@ class GeoIP
       CountryName[code],          # Country name, per ISO 3166
       CountryContinent[code]      # Continent code.
     )
+  end
+
+  # Search the GeoIP database for the specified host, retuning region info.
+  #
+  # +hostname+ is a String holding the hosts's DNS name or numeric IP
+  # address.
+  #
+  # Returns a Region object with the nine elements:
+  # * The host or IP address string as requested
+  # * The IP address string after looking up the host
+  # * The two-character country code (ISO 3166-1 alpha-2)
+  # * The three-character country code (ISO 3166-2 alpha-3)
+  # * The ISO 3166 English-language name of the country
+  # * The two-character continent code
+  # * The region name (state or territory)
+  # * The timezone name, if known
+  #
+  def region(hostname)
+    if (@database_type == GEOIP_CITY_EDITION_REV0 ||
+        @database_type == GEOIP_CITY_EDITION_REV1 ||
+        @database_type == GEOIP_CITY_EDITION_REV1_V6)
+      return city(hostname)
+    end
+
+    if (@database_type == GEOIP_REGION_EDITION_REV0 ||
+        @database_type == GEOIP_REGION_EDITION_REV1)
+      ip = lookup_ip(hostname)
+      ipnum = iptonum(ip)
+      pos = seek_record(ipnum)
+    else
+      throw "Invalid GeoIP database type, can't look up Region by IP"
+    end
+
+    unless pos == @database_segments[0]
+      read_region(pos, hostname, ip)
+    end
   end
 
   # Search the GeoIP database for the specified host, returning city info.
@@ -402,6 +452,45 @@ class GeoIP
         @database_type == GEOIP_NETSPEED_EDITION)
       @database_segments = [COUNTRY_BEGIN]
     end
+  end
+
+  def read_region(pos, hostname = '', ip = '') #:nodoc:
+    if (@database_type == GEOIP_REGION_EDITION_REV0)
+      pos -= STATE_BEGIN_REV0
+      if (pos >= 1000)
+        code = 225
+        region = ((pos - 1000) / 26 + 65).chr + ((pos - 1000) % 26 + 65).chr
+      else
+        code = pos
+        region = ''
+      end
+    elsif (@database_type == GEOIP_REGION_EDITION_REV1)
+      pos -= STATE_BEGIN_REV1
+      if (pos < US_OFFSET)
+        code = 0
+        region = ''
+      elsif (pos < CANADA_OFFSET)
+        code = 225
+        region = ((pos - US_OFFSET) / 26 + 65).chr + ((pos - US_OFFSET) % 26 + 65).chr
+      elsif (pos < WORLD_OFFSET)
+        code = 38
+        region = ((pos - CANADA_OFFSET) / 26 + 65).chr + ((pos - CANADA_OFFSET) % 26 + 65).chr
+      else
+        code = (pos - WORLD_OFFSET) / FIPS_RANGE
+        region = ''
+      end
+    end
+
+    Region.new(
+      hostname,
+      ip,
+      CountryCode[code],          # ISO3166-1 alpha-2 code
+      CountryCode3[code],         # ISO3166-2 alpha-3 code
+      CountryName[code],          # Country name, per ISO 3166
+      CountryContinent[code],     # Continent code.
+      region,
+      (TimeZone["#{CountryCode[code]}#{region}"] || TimeZone["#{CountryCode[code]}"])
+    )
   end
 
   # Search the GeoIP database for the specified host, returning city info.
