@@ -58,7 +58,7 @@ require 'yaml'
 class GeoIP
 
   # The GeoIP GEM version number
-  VERSION = "1.2.2"
+  VERSION = "1.3.0"
 
   # The +data/+ directory for geoip
   DATA_DIR = File.expand_path(File.join(File.dirname(__FILE__),'..','data','geoip'))
@@ -77,6 +77,9 @@ class GeoIP
   # Ordered list of the ISO3166 2-character continent code of the countries,
   # ordered by GeoIP ID
   CountryContinent = YAML.load_file(File.join(DATA_DIR,'country_continent.yml'))
+
+  # Load a hash of region names by region code
+  RegionName = YAML.load_file(File.join(DATA_DIR,'region.yml'))
 
   # Hash of the timezone codes mapped to timezone name, per zoneinfo
   TimeZone = YAML.load_file(File.join(DATA_DIR,'time_zone.yml'))
@@ -118,11 +121,25 @@ class GeoIP
 
   end
 
-  class City < Struct.new(:request, :ip, :country_code2, :country_code3, :country_name, :continent_code,
-                          :region_name, :city_name, :postal_code, :latitude, :longitude, :dma_code, :area_code, :timezone)
+  class Region < Struct.new(:request, :ip, :country_code2, :country_code3, :country_name, :continent_code,
+                            :region_code, :region_name, :timezone)
 
     def to_hash
       Hash[each_pair.to_a]
+    end
+
+  end
+
+  # Warning: for historical reasons the region code is mis-named region_name here
+  class City < Struct.new(:request, :ip, :country_code2, :country_code3, :country_name, :continent_code,
+                          :region_name, :city_name, :postal_code, :latitude, :longitude, :dma_code, :area_code, :timezone, :real_region_name)
+
+    def to_hash
+      Hash[each_pair.to_a]
+    end
+
+    def region_code
+      self.region_name
     end
 
   end
@@ -185,6 +202,11 @@ class GeoIP
       return city(hostname)
     end
 
+    if (@database_type == GEOIP_REGION_EDITION_REV0 ||
+        @database_type == GEOIP_REGION_EDITION_REV1)
+      return region(hostname)
+    end
+
     ip = lookup_ip(hostname)
     if (@database_type == GEOIP_COUNTRY_EDITION ||
         @database_type == GEOIP_PROXY_EDITION ||
@@ -208,6 +230,42 @@ class GeoIP
       CountryName[code],          # Country name, per ISO 3166
       CountryContinent[code]      # Continent code.
     )
+  end
+
+  # Search the GeoIP database for the specified host, retuning region info.
+  #
+  # +hostname+ is a String holding the hosts's DNS name or numeric IP
+  # address.
+  #
+  # Returns a Region object with the nine elements:
+  # * The host or IP address string as requested
+  # * The IP address string after looking up the host
+  # * The two-character country code (ISO 3166-1 alpha-2)
+  # * The three-character country code (ISO 3166-2 alpha-3)
+  # * The ISO 3166 English-language name of the country
+  # * The two-character continent code
+  # * The region name (state or territory)
+  # * The timezone name, if known
+  #
+  def region(hostname)
+    if (@database_type == GEOIP_CITY_EDITION_REV0 ||
+        @database_type == GEOIP_CITY_EDITION_REV1 ||
+        @database_type == GEOIP_CITY_EDITION_REV1_V6)
+      return city(hostname)
+    end
+
+    if (@database_type == GEOIP_REGION_EDITION_REV0 ||
+        @database_type == GEOIP_REGION_EDITION_REV1)
+      ip = lookup_ip(hostname)
+      ipnum = iptonum(ip)
+      pos = seek_record(ipnum)
+    else
+      throw "Invalid GeoIP database type, can't look up Region by IP"
+    end
+
+    unless pos == @database_segments[0]
+      read_region(pos, hostname, ip)
+    end
   end
 
   # Search the GeoIP database for the specified host, returning city info.
@@ -404,6 +462,51 @@ class GeoIP
     end
   end
 
+  def read_region(pos, hostname = '', ip = '') #:nodoc:
+    if (@database_type == GEOIP_REGION_EDITION_REV0)
+      pos -= STATE_BEGIN_REV0
+      if (pos >= 1000)
+        code = 225
+        region_code = ((pos - 1000) / 26 + 65).chr + ((pos - 1000) % 26 + 65).chr
+      else
+        code = pos
+        region_code = ''
+      end
+    elsif (@database_type == GEOIP_REGION_EDITION_REV1)
+      pos -= STATE_BEGIN_REV1
+      if (pos < US_OFFSET)
+        code = 0
+        region_code = ''
+      elsif (pos < CANADA_OFFSET)
+        code = 225
+        region_code = ((pos - US_OFFSET) / 26 + 65).chr + ((pos - US_OFFSET) % 26 + 65).chr
+      elsif (pos < WORLD_OFFSET)
+        code = 38
+        region_code = ((pos - CANADA_OFFSET) / 26 + 65).chr + ((pos - CANADA_OFFSET) % 26 + 65).chr
+      else
+        code = (pos - WORLD_OFFSET) / FIPS_RANGE
+        region_code = ''
+      end
+    end
+
+    Region.new(
+      hostname,
+      ip,
+      CountryCode[code],          # ISO3166-1 alpha-2 code
+      CountryCode3[code],         # ISO3166-2 alpha-3 code
+      CountryName[code],          # Country name, per ISO 3166
+      CountryContinent[code],     # Continent code.
+      region_code,		  # Unfortunately this is called region_name in the City structure
+      lookup_region_name(CountryCode[code], region_code),
+      (TimeZone["#{CountryCode[code]}#{region_code}"] || TimeZone["#{CountryCode[code]}"])
+    )
+  end
+
+  def lookup_region_name(country_iso2, region_code)
+    country_regions = RegionName[country_iso2]
+    country_regions && country_regions[region_code]
+  end
+
   # Search the GeoIP database for the specified host, returning city info.
   #
   # +hostname+ is a String holding the host's DNS name or numeric
@@ -433,9 +536,9 @@ class GeoIP
     @iter_pos += 1 unless @iter_pos.nil?
 
     spl = record.split("\x00", 4)
-    # Get the region:
-    region = spl[0]
-    @iter_pos += (region.size + 1) unless @iter_pos.nil?
+    # Get the region code:
+    region_code = spl[0]
+    @iter_pos += (region_code.size + 1) unless @iter_pos.nil?
 
     # Get the city:
     city = spl[1]
@@ -490,14 +593,15 @@ class GeoIP
       CountryCode3[code],         # ISO3166-2 code
       CountryName[code],          # Country name, per IS03166
       CountryContinent[code],     # Continent code.
-      region,                     # Region name
+      region_code,                # Region code (called region_name, unfortunately)
       city,                       # City name
       postal_code,                # Postal code
       latitude,
       longitude,
       dma_code,
       area_code,
-      (TimeZone["#{CountryCode[code]}#{region}"] || TimeZone["#{CountryCode[code]}"])
+      (TimeZone["#{CountryCode[code]}#{region_code}"] || TimeZone["#{CountryCode[code]}"]),
+      lookup_region_name(CountryCode[code], region_code)  # Real region name
     )
   end
 
