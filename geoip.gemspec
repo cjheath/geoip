@@ -5,7 +5,7 @@
 
 Gem::Specification.new do |s|
   s.name = "geoip"
-  s.version = "1.3.0"
+  s.version = "1.3.1"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Clifford Heath", "Roland Moriz"]
@@ -19,6 +19,7 @@ Gem::Specification.new do |s|
   s.files = [
     "History.rdoc",
     "README.rdoc",
+    "LICENSE",
     "Rakefile",
     "bin/geoip",
     "config/website.yml",
