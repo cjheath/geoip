@@ -148,6 +148,10 @@ class GeoIP
 
     alias as_num number
 
+    def to_hash
+      Hash[each_pair.to_a]
+    end
+
   end
 
   # The Edition number that identifies which kind of database you've opened
