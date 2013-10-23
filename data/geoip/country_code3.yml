@@ -10,9 +10,9 @@
 - AIA
 - ALB
 - ARM
-- ANT
+- CUW
 - AGO
-- AQ
+- ATA
 - ARG
 - ASM
 - AUT
@@ -34,12 +34,12 @@
 - BRA
 - BHS
 - BTN
-- BV
+- BVT
 - BWA
 - BLR
 - BLZ
 - CAN
-- CC
+- CCK
 - COD
 - CAF
 - COG
@@ -53,7 +53,7 @@
 - CRI
 - CUB
 - CPV
-- CX
+- CXR
 - CYP
 - CZE
 - DEU
@@ -75,7 +75,7 @@
 - FSM
 - FRO
 - FRA
-- FX
+- SXM
 - GAB
 - GBR
 - GRD
@@ -89,13 +89,13 @@
 - GLP
 - GNQ
 - GRC
-- GS
+- SGS
 - GTM
 - GUM
 - GNB
 - GUY
 - HKG
-- HM
+- HMD
 - HND
 - HRV
 - HTI
@@ -104,7 +104,7 @@
 - IRL
 - ISR
 - IND
-- IO
+- IOT
 - IRQ
 - IRN
 - ISL
@@ -208,7 +208,7 @@
 - SWZ
 - TCA
 - TCD
-- TF
+- ATF
 - TGO
 - THA
 - TJK
@@ -224,7 +224,7 @@
 - TZA
 - UKR
 - UGA
-- UM
+- UMI
 - USA
 - URY
 - UZB
@@ -238,7 +238,7 @@
 - WLF
 - WSM
 - YEM
-- YT
+- MYT
 - SRB
 - ZAF
 - ZMB
@@ -253,3 +253,5 @@
 - JEY
 - BLM
 - MAF
+- BES
+- SSD
