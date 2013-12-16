@@ -58,7 +58,7 @@ require 'yaml'
 class GeoIP
 
   # The GeoIP GEM version number
-  VERSION = "1.3.3"
+  VERSION = "1.3.4"
 
   # The +data/+ directory for geoip
   DATA_DIR = File.expand_path(File.join(File.dirname(__FILE__),'..','data','geoip'))
@@ -152,6 +152,12 @@ class GeoIP
       Hash[each_pair.to_a]
     end
 
+  end
+
+  class ISP < Struct.new(:lsp)
+    def to_hash
+      Hash[each_pair.to_a]
+    end
   end
 
   # The Edition number that identifies which kind of database you've opened
@@ -347,7 +353,7 @@ class GeoIP
 
     record = atomic_read(MAX_ORG_RECORD_LENGTH, off)
     record = record.sub(/\000.*/n, '')
-    record
+    record.start_with?('*') ? nil : ISP.new(record)
   end
 
   # Search a ASN GeoIP database for the specified host, returning the AS
