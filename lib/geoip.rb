@@ -58,7 +58,7 @@ require 'yaml'
 class GeoIP
 
   # The GeoIP GEM version number
-  VERSION = "1.3.4"
+  VERSION = "1.3.5"
 
   # The +data/+ directory for geoip
   DATA_DIR = File.expand_path(File.join(File.dirname(__FILE__),'..','data','geoip'))
@@ -154,7 +154,7 @@ class GeoIP
 
   end
 
-  class ISP < Struct.new(:lsp)
+  class ISP < Struct.new(:isp)
     def to_hash
       Hash[each_pair.to_a]
     end
