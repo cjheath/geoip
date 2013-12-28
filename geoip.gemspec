@@ -38,7 +38,7 @@ Gem::Specification.new do |s|
     "test/test_geoip.rb",
     "test/test_helper.rb"
   ]
-  s.homepage = "http://github.com/cjheath/geoip"
+  s.homepage = "https://github.com/cjheath/geoip"
   s.licenses = ["LGPL"]
   s.require_paths = ["lib"]
   s.rubygems_version = "2.1.10"
