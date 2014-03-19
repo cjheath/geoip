@@ -426,12 +426,13 @@ class GeoIP
   def preload_data
     if @mutex
       @mutex.synchronize do
+        @file.seek(0)
         @contents = StringIO.new(@file.read)
         @file.close
         @mutex = false
       end
     else
-      @contents = StringIO.new(File.pread(@file), 'rb')
+      @contents = StringIO.new(IO.pread(@file, @file.size, 0), 'rb')
     end
   end
 
