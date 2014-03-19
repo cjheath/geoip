@@ -173,7 +173,7 @@ class GeoIP
   # +filename+ is a String holding the path to the GeoIP.dat file
   # +options+ is an integer holding caching flags (unimplemented)
   #
-  def initialize(filename, flags = 0)
+  def initialize(filename, flags = 0, preload = false)
     @mutex = unless IO.respond_to?(:pread)
                Mutex.new
              end
@@ -184,6 +184,8 @@ class GeoIP
     @file = File.open(filename, 'rb')
 
     detect_database_type!
+
+    preload_data if preload
   end
 
   # Search the GeoIP database for the specified host, returning country
@@ -419,6 +421,19 @@ class GeoIP
   end
 
   private
+
+  # Loads data into a StringIO which is Copy-on-write friendly
+  def preload_data
+    if @mutex
+      @mutex.synchronize do
+        @contents = StringIO.new(@file.read)
+        @file.close
+        @mutex = false
+      end
+    else
+      @contents = StringIO.new(File.pread(@file), 'rb')
+    end
+  end
 
   # Detects the type of the database.
   def detect_database_type! # :nodoc:
@@ -708,9 +723,11 @@ class GeoIP
 
   # reads +length+ bytes from +offset+ as atomically as possible
   # if IO.pread is available, it'll use that (making it both multithread
-  # and multiprocess-safe). Otherwise we'll use a mutex to synchronize
+  # and multiprocess-safe). Otherwise we'll use a mutex to synchronize
   # access (only providing protection against multiple threads, but not
   # file descriptors shared across multiple processes).
+  # If the contents of the database have been preloaded it'll work with
+  # the StringIO object directly.
   def atomic_read(length, offset) #:nodoc:
     if @mutex
       @mutex.synchronize do
@@ -718,7 +735,12 @@ class GeoIP
         @file.read(length)
       end
     else
-      IO.pread(@file.fileno, length, offset)
+      if @contents
+        @contents.seek(offset)
+        @contents.read(length)
+      else
+        IO.pread(@file.fileno, length, offset)
+      end
     end
   end
 
