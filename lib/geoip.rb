@@ -177,7 +177,8 @@ class GeoIP
     if preload || !IO.respond_to?(:pread)
       @mutex = Mutex.new
     end
-    @use_pread = !@mutex
+
+    @use_pread = IO.respond_to?(:pread) && !preload
 
     @flags = flags
     @database_type = GEOIP_COUNTRY_EDITION
