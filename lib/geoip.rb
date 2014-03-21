@@ -174,9 +174,10 @@ class GeoIP
   # +options+ is an integer holding caching flags (unimplemented)
   #
   def initialize(filename, flags = 0, preload = false)
-    @mutex = unless IO.respond_to?(:pread)
-               Mutex.new
-             end
+    if preload || !IO.respond_to?(:pread)
+      @mutex = Mutex.new
+    end
+    @use_pread = !@mutex
 
     @flags = flags
     @database_type = GEOIP_COUNTRY_EDITION
@@ -424,16 +425,9 @@ class GeoIP
 
   # Loads data into a StringIO which is Copy-on-write friendly
   def preload_data
-    if @mutex
-      @mutex.synchronize do
-        @file.seek(0)
-        @contents = StringIO.new(@file.read)
-        @file.close
-        @mutex = false
-      end
-    else
-      @contents = StringIO.new(IO.pread(@file, @file.size, 0), 'rb')
-    end
+    @file.seek(0)
+    @contents = StringIO.new(@file.read)
+    @file.close
   end
 
   # Detects the type of the database.
@@ -731,18 +725,19 @@ class GeoIP
   # the StringIO object directly.
   def atomic_read(length, offset) #:nodoc:
     if @mutex
-      @mutex.synchronize do
-        @file.seek(offset)
-        @file.read(length)
-      end
+      @mutex.synchronize { atomic_read_unguarded(length, offset) }
     else
-      if @contents
-        @contents.seek(offset)
-        @contents.read(length)
-      else
-        IO.pread(@file.fileno, length, offset)
-      end
+      atomic_read_unguarded(length, offset)
     end
   end
 
+  def atomic_read_unguarded(length, offset)
+    if @use_pread
+      IO.pread(@file.fileno, length, offset)
+    else
+      io = @contents || @file
+      io.seek(offset)
+      io.read(length)
+    end
+  end
 end
