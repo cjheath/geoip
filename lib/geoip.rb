@@ -171,14 +171,15 @@ class GeoIP
   # Open the GeoIP database and determine the file format version.
   #
   # +filename+ is a String holding the path to the GeoIP.dat file
-  # +options+ is an integer holding caching flags (unimplemented)
+  # +flags+ is an integer holding caching flags (unimplemented)
+  # +options+ is a Hash allowing you to specify the preload option
   #
-  def initialize(filename, flags = 0, preload = false)
-    if preload || !IO.respond_to?(:pread)
+  def initialize(filename, flags = 0, options = {})
+    if options[:preload] || !IO.respond_to?(:pread)
       @mutex = Mutex.new
     end
 
-    @use_pread = IO.respond_to?(:pread) && !preload
+    @use_pread = IO.respond_to?(:pread) && !options[:preload]
 
     @flags = flags
     @database_type = GEOIP_COUNTRY_EDITION
@@ -187,7 +188,7 @@ class GeoIP
 
     detect_database_type!
 
-    preload_data if preload
+    preload_data if options[:preload]
   end
 
   # Search the GeoIP database for the specified host, returning country
