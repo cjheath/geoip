@@ -171,19 +171,23 @@ class GeoIP
   # Open the GeoIP database and determine the file format version.
   #
   # +filename+ is a String holding the path to the GeoIP.dat file
-  # +options+ is an integer holding caching flags (unimplemented)
+  # +options+ is a Hash allowing you to specify the caching options
   #
-  def initialize(filename, flags = 0)
-    @mutex = unless IO.respond_to?(:pread)
-               Mutex.new
-             end
+  def initialize(filename, options = {})
+    if options[:preload] || !IO.respond_to?(:pread)
+      @mutex = Mutex.new
+    end
 
-    @flags = flags
+    @use_pread = IO.respond_to?(:pread) && !options[:preload]
+
+    @options = options
     @database_type = GEOIP_COUNTRY_EDITION
     @record_length = STANDARD_RECORD_LENGTH
     @file = File.open(filename, 'rb')
 
     detect_database_type!
+
+    preload_data if options[:preload]
   end
 
   # Search the GeoIP database for the specified host, returning country
@@ -419,6 +423,13 @@ class GeoIP
   end
 
   private
+
+  # Loads data into a StringIO which is Copy-on-write friendly
+  def preload_data
+    @file.seek(0)
+    @contents = StringIO.new(@file.read)
+    @file.close
+  end
 
   # Detects the type of the database.
   def detect_database_type! # :nodoc:
@@ -708,18 +719,26 @@ class GeoIP
 
   # reads +length+ bytes from +offset+ as atomically as possible
   # if IO.pread is available, it'll use that (making it both multithread
-  # and multiprocess-safe). Otherwise we'll use a mutex to synchronize
+  # and multiprocess-safe). Otherwise we'll use a mutex to synchronize
   # access (only providing protection against multiple threads, but not
   # file descriptors shared across multiple processes).
+  # If the contents of the database have been preloaded it'll work with
+  # the StringIO object directly.
   def atomic_read(length, offset) #:nodoc:
     if @mutex
-      @mutex.synchronize do
-        @file.seek(offset)
-        @file.read(length)
-      end
+      @mutex.synchronize { atomic_read_unguarded(length, offset) }
     else
-      IO.pread(@file.fileno, length, offset)
+      atomic_read_unguarded(length, offset)
     end
   end
 
+  def atomic_read_unguarded(length, offset)
+    if @use_pread
+      IO.pread(@file.fileno, length, offset)
+    else
+      io = @contents || @file
+      io.seek(offset)
+      io.read(length)
+    end
+  end
 end
