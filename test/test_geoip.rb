@@ -1,6 +1,6 @@
 require File.dirname(__FILE__) + '/test_helper.rb'
 
-class TestGeoip < Test::Unit::TestCase
+class TestGeoip < Minitest::Test
 
   def setup
   end
