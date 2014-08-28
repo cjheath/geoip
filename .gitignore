@@ -3,5 +3,4 @@ rdoc
 website/index.html
 Geo*.dat
 *_test.rb
-GeoIP-*
-mmutils
+external
