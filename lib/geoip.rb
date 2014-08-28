@@ -1,3 +1,4 @@
+require 'debugger'
 #
 # Native Ruby reader for the GeoIP database
 # Lookup the country where IP address is allocated
@@ -96,6 +97,12 @@ class GeoIP
   GEOIP_NETSPEED_EDITION = 10
   GEOIP_COUNTRY_EDITION_V6 = 12
   GEOIP_CITY_EDITION_REV1_V6 = 30
+  GEOIP_NETSPEED_EDITION_REV1 = 32
+
+  GEOIP_UNKNOWN_SPEED = 0
+  GEOIP_DIALUP_SPEED = 1
+  GEOIP_CABLEDSL_SPEED = 2
+  GEOIP_CORPORATE_SPEED = 3
 
   COUNTRY_BEGIN = 16776960          #:nodoc:
   STATE_BEGIN_REV0 = 16700000       #:nodoc:
@@ -210,40 +217,50 @@ class GeoIP
   # * The two-character continent code
   #
   def country(hostname)
-    if (@database_type == GEOIP_CITY_EDITION_REV0 ||
-        @database_type == GEOIP_CITY_EDITION_REV1 ||
-        @database_type == GEOIP_CITY_EDITION_REV1_V6)
-      return city(hostname)
-    end
+    case @database_type
+    when GEOIP_CITY_EDITION_REV0, GEOIP_CITY_EDITION_REV1, GEOIP_CITY_EDITION_REV1_V6
+      city(hostname)
 
-    if (@database_type == GEOIP_REGION_EDITION_REV0 ||
-        @database_type == GEOIP_REGION_EDITION_REV1)
-      return region(hostname)
-    end
+    when GEOIP_REGION_EDITION_REV0, GEOIP_REGION_EDITION_REV1
+      region(hostname)
 
-    ip = lookup_ip(hostname)
-    if (@database_type == GEOIP_COUNTRY_EDITION ||
-        @database_type == GEOIP_PROXY_EDITION ||
-        @database_type == GEOIP_NETSPEED_EDITION)
-        # Convert numeric IP address to an integer
-        ipnum = iptonum(ip)
-        code = (seek_record(ipnum) - COUNTRY_BEGIN)
-    elsif @database_type == GEOIP_COUNTRY_EDITION_V6
-      ipaddr = IPAddr.new ip
-      code = (seek_record_v6(ipaddr.to_i) - COUNTRY_BEGIN)
+    when GEOIP_NETSPEED_EDITION, GEOIP_NETSPEED_EDITION_REV1
+      netspeed(hostname)
+
+    when GEOIP_COUNTRY_EDITION, GEOIP_PROXY_EDITION, GEOIP_COUNTRY_EDITION_V6
+      ip = lookup_ip(hostname)
+      if @database_type == GEOIP_COUNTRY_EDITION_V6
+	ipaddr = IPAddr.new ip
+	code = (seek_record_v6(ipaddr.to_i) - COUNTRY_BEGIN)
+      else
+	# Convert numeric IP address to an integer
+	ipnum = iptonum(ip)
+	code = (seek_record(ipnum) - @database_segments[0])
+      end
+      Country.new(
+	hostname,                   # Requested hostname
+	ip,                         # Ip address as dotted quad
+	code,                       # GeoIP's country code
+	CountryCode[code],          # ISO3166-1 alpha-2 code
+	CountryCode3[code],         # ISO3166-2 alpha-3 code
+	CountryName[code],          # Country name, per ISO 3166
+	CountryContinent[code]      # Continent code.
+      )
     else
-      throw "Invalid GeoIP database type, can't look up Country by IP"
+      throw "Invalid GeoIP database type #{@database_type}, can't look up Country by IP"
     end
+  end
 
-    Country.new(
-      hostname,                   # Requested hostname
-      ip,                         # Ip address as dotted quad
-      code,                       # GeoIP's country code
-      CountryCode[code],          # ISO3166-1 alpha-2 code
-      CountryCode3[code],         # ISO3166-2 alpha-3 code
-      CountryName[code],          # Country name, per ISO 3166
-      CountryContinent[code]      # Continent code.
-    )
+  def netspeed(hostname)
+    unless (@database_type == GEOIP_NETSPEED_EDITION ||
+        @database_type == GEOIP_NETSPEED_EDITION_REV1)
+      throw "Invalid GeoIP database type #{@database_type}, can't look up Netspeed by IP"
+    end
+    # Convert numeric IP address to an integer
+    ip = lookup_ip(hostname)
+    ipnum = iptonum(ip)
+    code = (seek_record(ipnum) - @database_segments[0])
+    code
   end
 
   # Search the GeoIP database for the specified host, retuning region info.
@@ -456,7 +473,8 @@ class GeoIP
                @database_type == GEOIP_CITY_EDITION_REV1_V6 ||
                @database_type == GEOIP_ORG_EDITION ||
                @database_type == GEOIP_ISP_EDITION ||
-               @database_type == GEOIP_ASNUM_EDITION)
+               @database_type == GEOIP_ASNUM_EDITION ||
+	       @database_type == GEOIP_NETSPEED_EDITION_REV1)
 
           # City/Org Editions have two segments, read offset of second segment
           @database_segments = [0]
@@ -664,38 +682,27 @@ class GeoIP
     mask = 0x80000000
 
     31.downto(0) do |depth|
-      off = (@record_length * 2 * offset)
-      buf = atomic_read(@record_length * 2, off)
+      go_right = (ipnum & mask) != 0
+      off = @record_length * (2 * offset + (go_right ? 1 : 0))
+      offset = le_to_ui(r2 = atomic_read(@record_length, off).unpack('C*'))
 
-      buf.slice!(0...@record_length) if ((ipnum & mask) != 0)
-      offset = le_to_ui(buf[0...@record_length].unpack("C*"))
-
-      if (offset >= @database_segments[0])
-        return offset
-      end
-
+      return offset if offset >= @database_segments[0]
       mask >>= 1
     end
   end
 
   def seek_record_v6(ipnum)
-
     # Binary search in the file.
     # Records are pairs of little-endian integers, each of @record_length.
     offset = 0
     mask = 1 << 127
 
     127.downto(0) do |depth|
-      off = (@record_length * 2 * offset)
-      buf = atomic_read(@record_length * 2, off)
+      go_right = (ipnum & mask) != 0
+      off = @record_length * (2 * offset + (go_right ? 1 : 0))
+      offset = le_to_ui(atomic_read(@record_length, off).unpack("C*"))
 
-      buf.slice!(0...@record_length) if ((ipnum & mask) != 0)
-      offset = le_to_ui(buf[0...@record_length].unpack("C*"))
-
-      if (offset >= @database_segments[0])
-        return offset
-      end
-
+      return offset if offset >= @database_segments[0]
       mask >>= 1
     end
 
