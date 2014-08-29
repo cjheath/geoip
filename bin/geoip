@@ -9,7 +9,37 @@ data = '/usr/share/GeoIP/GeoIP.dat'
 data = ARGV.shift if ARGV[0] =~ /\.dat\Z/
 
 geoip = GeoIP.new data
-req = ([GeoIP::GEOIP_CITY_EDITION_REV1, GeoIP::GEOIP_CITY_EDITION_REV0].include?(geoip.databaseType)) ? :city : :country
+req = case geoip.databaseType
+	when GeoIP::Edition::CITY_REV1,
+	     GeoIP::Edition::CITY_REV0,
+	     GeoIP::Edition::CITY_REV1_V6
+	  :city
+	when GeoIP::Edition::REGION_REV0,
+	     GeoIP::Edition::REGION_REV1
+	  :region
+	when GeoIP::Edition::NETSPEED, GeoIP::Edition::NETSPEED_REV1
+	  :netspeed
+	when GeoIP::Edition::ISP,	# All these looked up the same way
+	     GeoIP::Edition::ORG,
+	     GeoIP::Edition::ISP,
+	     GeoIP::Edition::DOMAIN,
+	     GeoIP::Edition::ACCURACYRADIUS,
+	     GeoIP::Edition::NETSPEED,
+	     GeoIP::Edition::USERTYPE,
+	     GeoIP::Edition::USERTYPE_V6,
+	     GeoIP::Edition::REGISTRAR,
+	     GeoIP::Edition::LOCATIONA,
+	     GeoIP::Edition::CITYCONF,
+	     GeoIP::Edition::COUNTRYCONF,
+	     GeoIP::Edition::REGIONCONF,
+	     GeoIP::Edition::POSTALCONF
+	  :isp
+	when GeoIP::Edition::ASNUM
+	  :asn
+	when GeoIP::Edition::COUNTRY, GeoIP::Edition::PROXY, GeoIP::Edition::COUNTRY_V6
+	  :country
+	  :asn
+	end
 
 if ARGV.size > 0
   ARGV.each { |a| p geoip.send(req, a) }
