@@ -442,8 +442,8 @@ class GeoIP
     # Convert numeric IP address to an integer
     ipnum = iptonum(ip)
 
-    if (@database_type != Edition::ASNUM)
-      throw "Invalid GeoIP database type, can't look up ASN by IP"
+    if ![Edition::ASNUM, Edition::ASNUM_V6].include? @database_type
+      throw "Invalid GeoIP database type #{@database_type}, can't look up ASN by IP"
     end
 
     pos = seek_record(ipnum)
@@ -657,7 +657,7 @@ class GeoIP
       @database_segments = [COUNTRY_BEGIN]
     end
 
-    puts "Detected IPv#{@ip_bits == 32 ? '4' : '6'} database_type #{@database_type} with #{@database_segments[0]} records of length #{@record_length} (data starts at #{@database_segments[0]*@record_length*2})"
+    # puts "Detected IPv#{@ip_bits == 32 ? '4' : '6'} database_type #{@database_type} with #{@database_segments[0]} records of length #{@record_length} (data starts at #{@database_segments[0]*@record_length*2})"
   end
 
   def read_country code, hostname, ip

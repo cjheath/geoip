@@ -38,6 +38,7 @@ req = case geoip.databaseType
 	  :asn
 	when GeoIP::Edition::COUNTRY, GeoIP::Edition::PROXY, GeoIP::Edition::COUNTRY_V6
 	  :country
+	else
 	  :asn
 	end
 
