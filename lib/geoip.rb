@@ -58,7 +58,7 @@ require 'yaml'
 class GeoIP
 
   # The GeoIP GEM version number
-  VERSION = "1.4.0"
+  VERSION = "1.5.0"
 
   # The +data/+ directory for geoip
   DATA_DIR = File.expand_path(File.join(File.dirname(__FILE__),'..','data','geoip'))
@@ -768,10 +768,7 @@ class GeoIP
   # * The timezone name, if known
   #
   def read_city(pos, hostname = '', ip = '') #:nodoc:
-    # off = pos + (2*@record_length - 1) * @database_segments[0]
-    off = pos+index_size-@database_segments[0]
-    record = atomic_read(FULL_RECORD_LENGTH, off)
-
+    record = atomic_read(FULL_RECORD_LENGTH, pos+index_size)
     return unless (record && record.size == FULL_RECORD_LENGTH)
 
     # The country code is the first byte:
@@ -789,7 +786,7 @@ class GeoIP
     city = spl[1]
     @iter_pos += (city.size + 1) unless @iter_pos.nil?
     # set the correct encoding in ruby 1.9 compatible environments:
-    city.force_encoding('iso-8859-1') if city.respond_to?(:force_encoding)
+    city = city.force_encoding('iso-8859-1').encode('utf-8') if city.respond_to?(:force_encoding)
 
     # Get the postal code:
     postal_code = spl[2]

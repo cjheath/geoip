@@ -1,6 +1,6 @@
 pkg
 rdoc
+databases
 website/index.html
-Geo*.dat
 *_test.rb
 external
