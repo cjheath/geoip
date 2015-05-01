@@ -12,6 +12,6 @@ ARGV.each do |file|
       else
 	'%d.%d.%d.%d' % [ip].pack('N').unpack('C4')
       end
-    puts "#{ip_str}\t#{val.to_hash.to_a.sort.map{|n,v| "#{n}=#{v.inspect}"}*', '}"
+    puts "#{ip_str}\t#{val ? val.to_hash.to_a.sort.map{|n,v| "#{n}=#{v.inspect}"}*', ' : 'Unassigned'}"
   end
 end

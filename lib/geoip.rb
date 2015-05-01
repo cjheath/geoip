@@ -58,7 +58,7 @@ require 'yaml'
 class GeoIP
 
   # The GeoIP GEM version number
-  VERSION = "1.5.0"
+  VERSION = "1.6.0"
 
   # The +data/+ directory for geoip
   DATA_DIR = File.expand_path(File.join(File.dirname(__FILE__),'..','data','geoip'))
@@ -297,8 +297,8 @@ class GeoIP
     # Convert numeric IP address to an integer
     ip = lookup_ip(hostname)
     ipnum = iptonum(ip)
-    offset = (seek_record(ipnum) - @database_segments[0])
-    read_netspeed(offset)
+    pos = seek_record(ipnum)
+    read_netspeed(pos-@database_segments[0])
   end
 
   # Search the GeoIP database for the specified host, returning region info.
@@ -332,7 +332,9 @@ class GeoIP
       throw "Invalid GeoIP database type, can't look up Region by IP"
     end
 
-    unless pos == @database_segments[0]
+    if pos == @database_segments[0]
+      nil
+    else
       read_region(pos, hostname, ip)
     end
   end
@@ -373,18 +375,7 @@ class GeoIP
       throw "Invalid GeoIP database type, can't look up City by IP"
     end
 
-    # This next statement was added to MaxMind's C version after it was
-    # rewritten in Ruby. It prevents unassigned IP addresses from returning
-    # bogus data.  There was concern over whether the changes to an
-    # application's behaviour were always correct, but this has been tested
-    # using an exhaustive search of the top 16 bits of the IP address space.
-    # The records where the change takes effect contained *no* valid data. 
-    # If you're concerned, email me, and I'll send you the test program so
-    # you can test whatever IP range you think is causing problems,
-    # as I don't care to undertake an exhaustive search of the 32-bit space.
-    unless pos == @database_segments[0]
-      read_city(pos-@database_segments[0], hostname, ip)
-    end
+    read_city(pos-@database_segments[0], hostname, ip)
   end
 
   # Search a ISP GeoIP database for the specified host, returning the ISP
@@ -496,7 +487,7 @@ class GeoIP
     off1 = le_to_ui(record1.unpack('C*'))
     val = off1 - @database_segments[0]
     if val >= 0
-      yield(ipnum, read_record(ipnum.to_s, ipnum, val)) if val > 0
+      yield(ipnum, val > 0 ? read_record(ipnum.to_s, ipnum, val) : nil) 
     elsif mask != 0
       each_by_ip(off1, ipnum, mask >> 1, &callback)
     end
@@ -505,7 +496,7 @@ class GeoIP
     off2 = le_to_ui(record2.unpack('C*'))
     val = off2 - @database_segments[0]
     if val >= 0
-      yield(ipnum|mask, read_record(ipnum.to_s, ipnum, val)) if val > 0
+      yield(ipnum|mask, val > 0 ? read_record(ipnum.to_s, ipnum, val) : nil)
     elsif mask != 0
       each_by_ip(off2, ipnum|mask, mask >> 1, &callback)
     end
@@ -519,7 +510,7 @@ class GeoIP
       read_city(offset, hostname, ip)
 
     when Edition::REGION_REV0, Edition::REGION_REV1
-      read_region(offset, hostname, ip)
+      read_region(offset+@database_segments[0], hostname, ip)
 
     when Edition::NETSPEED, Edition::NETSPEED_REV1
       read_netspeed(offset)
@@ -712,8 +703,9 @@ class GeoIP
     )
   end
 
-  def read_asn off
-    record = atomic_read(MAX_ASN_RECORD_LENGTH, off+index_size)
+  def read_asn offset
+    return nil if offset == 0
+    record = atomic_read(MAX_ASN_RECORD_LENGTH, index_size+offset)
     record.slice!(record.index("\0")..-1)
 
     # AS####, Description
@@ -727,16 +719,15 @@ class GeoIP
 
   def read_netspeed(offset)
     return offset if @database_type == Edition::NETSPEED  # Numeric value
+    return nil if offset == 0
 
     record = atomic_read(20, index_size+offset)
     record.slice!(record.index("\0")..-1)
     record
   end
 
-  def read_isp pos
-    off = pos + index_size
-
-    record = atomic_read(MAX_ORG_RECORD_LENGTH, off)
+  def read_isp offset
+    record = atomic_read(MAX_ORG_RECORD_LENGTH, index_size+offset)
     record = record.sub(/\000.*/n, '')
     record.start_with?('*') ? nil : ISP.new(record)
   end
@@ -767,8 +758,9 @@ class GeoIP
   # * The dma_code and area_code, if available (REV1 City database)
   # * The timezone name, if known
   #
-  def read_city(pos, hostname = '', ip = '') #:nodoc:
-    record = atomic_read(FULL_RECORD_LENGTH, pos+index_size)
+  def read_city(offset, hostname = '', ip = '') #:nodoc:
+    return nil if offset == 0
+    record = atomic_read(FULL_RECORD_LENGTH, offset+index_size)
     return unless (record && record.size == FULL_RECORD_LENGTH)
 
     # The country code is the first byte:
@@ -910,27 +902,27 @@ class GeoIP
     be_to_ui(s.reverse)
   end
 
-  # reads +length+ bytes from +offset+ as atomically as possible
+  # reads +length+ bytes from +pos+ as atomically as possible
   # if IO.pread is available, it'll use that (making it both multithread
   # and multiprocess-safe). Otherwise we'll use a mutex to synchronize
   # access (only providing protection against multiple threads, but not
   # file descriptors shared across multiple processes).
   # If the contents of the database have been preloaded it'll work with
   # the StringIO object directly.
-  def atomic_read(length, offset) #:nodoc:
+  def atomic_read(length, pos) #:nodoc:
     if @mutex
-      @mutex.synchronize { atomic_read_unguarded(length, offset) }
+      @mutex.synchronize { atomic_read_unguarded(length, pos) }
     else
-      atomic_read_unguarded(length, offset)
+      atomic_read_unguarded(length, pos)
     end
   end
 
-  def atomic_read_unguarded(length, offset)
+  def atomic_read_unguarded(length, pos)
     if @use_pread
-      IO.pread(@file.fileno, length, offset)
+      IO.pread(@file.fileno, length, pos)
     else
       io = @contents || @file
-      io.seek(offset)
+      io.seek(pos)
       io.read(length)
     end
   end
