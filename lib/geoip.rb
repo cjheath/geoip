@@ -58,7 +58,7 @@ require 'yaml'
 class GeoIP
 
   # The GeoIP GEM version number
-  VERSION = "1.6.0"
+  VERSION = "1.6.1"
 
   # The +data/+ directory for geoip
   DATA_DIR = File.expand_path(File.join(File.dirname(__FILE__),'..','data','geoip'))
@@ -595,6 +595,7 @@ class GeoIP
         end
 
 	case @database_type
+	when Edition::COUNTRY
 	when Edition::NETSPEED_REV1
 	when Edition::ASNUM
 	when Edition::CITY_REV0
@@ -614,7 +615,6 @@ class GeoIP
 	    Edition::CITY_REV0_V6,
 	    Edition::CITY_REV1_V6,
 	    Edition::NETSPEED_REV1_V6,
-	    Edition::COUNTRY,
 	    Edition::COUNTRY_V6,
 	    Edition::PROXY
 	  @ip_bits = 128
