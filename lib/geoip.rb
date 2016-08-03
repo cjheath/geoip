@@ -709,9 +709,10 @@ class GeoIP
     record.slice!(record.index("\0")..-1)
 
     # AS####, Description
-    # REVISIT: Text is in Latin-1 (ISO8859-1)
     if record =~ /^(AS\d+)(?:\s(.*))?$/
-      ASN.new($1, $2)
+      # set the correct encoding in ruby 1.9 compatible environments:
+      asn = $2.respond_to?(:force_encoding) ? $2.force_encoding('iso-8859-1').encode('utf-8') : $2
+      ASN.new($1, asn)
     else
       record
     end
