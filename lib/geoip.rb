@@ -228,7 +228,8 @@ class GeoIP
     end
 
     @use_pread = IO.respond_to?(:pread) && !options[:preload]
-
+    @contents = nil
+    @iter_pos = nil
     @options = options
     @database_type = Edition::COUNTRY
     @record_length = STANDARD_RECORD_LENGTH
