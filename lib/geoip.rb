@@ -431,14 +431,17 @@ class GeoIP
   def asn(hostname)
     ip = lookup_ip(hostname)
 
-    # Convert numeric IP address to an integer
-    ipnum = iptonum(ip)
-
-    if ![Edition::ASNUM, Edition::ASNUM_V6].include? @database_type
+    if (@database_type == Edition::ASNUM)
+      # Convert numeric IP address to an integer
+      ipnum = iptonum(ip)
+      pos = seek_record(ipnum)
+    elsif (@database_type == Edition::ASNUM_V6)
+      ipaddr = IPAddr.new ip
+      pos = seek_record(ipaddr.to_i)
+    else
       throw "Invalid GeoIP database type #{@database_type}, can't look up ASN by IP"
     end
 
-    pos = seek_record(ipnum)
     read_asn(pos-@database_segments[0])
   end
 
