@@ -273,12 +273,12 @@ class GeoIP
     when Edition::COUNTRY, Edition::PROXY, Edition::COUNTRY_V6
       ip = lookup_ip(hostname)
       if @ip_bits > 32
-	ipaddr = IPAddr.new ip
-	code = (seek_record(ipaddr.to_i) - COUNTRY_BEGIN)
+        ipaddr = IPAddr.new ip
+        code = (seek_record(ipaddr.to_i) - COUNTRY_BEGIN)
       else
-	# Convert numeric IP address to an integer
-	ipnum = iptonum(ip)
-	code = (seek_record(ipnum) - @database_segments[0])
+        # Convert numeric IP address to an integer
+        ipnum = iptonum(ip)
+        code = (seek_record(ipnum) - @database_segments[0])
       end
       read_country(code, hostname, ip)
     else
@@ -396,18 +396,18 @@ class GeoIP
 
     case @database_type
     when Edition::ORG,
-	 Edition::ISP,
-	 Edition::DOMAIN,
-	 Edition::ASNUM,
-	 Edition::ACCURACYRADIUS,
-	 Edition::NETSPEED,
-	 Edition::USERTYPE,
-	 Edition::REGISTRAR,
-	 Edition::LOCATIONA,
-	 Edition::CITYCONF,
-	 Edition::COUNTRYCONF,
-	 Edition::REGIONCONF,
-	 Edition::POSTALCONF
+     Edition::ISP,
+     Edition::DOMAIN,
+     Edition::ASNUM,
+     Edition::ACCURACYRADIUS,
+     Edition::NETSPEED,
+     Edition::USERTYPE,
+     Edition::REGISTRAR,
+     Edition::LOCATIONA,
+     Edition::CITYCONF,
+     Edition::COUNTRYCONF,
+     Edition::REGIONCONF,
+     Edition::POSTALCONF
       pos = seek_record(ipnum)
       read_isp(pos-@database_segments[0])
     else
@@ -547,11 +547,11 @@ class GeoIP
     0.upto(STRUCTURE_INFO_MAX_SIZE - 1) do |i|
       if @file.read(3).bytes.all? { |byte| byte == 255 }
         @database_type =
-	  if @file.respond_to?(:getbyte)
-	    @file.getbyte
-	  else
-	    @file.getc
-	  end
+          if @file.respond_to?(:getbyte)
+            @file.getbyte
+          else
+            @file.getc
+          end
 
         @database_type -= 105 if @database_type >= 106
 
@@ -567,20 +567,20 @@ class GeoIP
                @database_type == Edition::ORG_V6 ||
                @database_type == Edition::ISP ||
                @database_type == Edition::ISP_V6 ||
-	       @database_type == Edition::REGISTRAR ||
-	       @database_type == Edition::REGISTRAR_V6 ||
-	       @database_type == Edition::USERTYPE ||	    # Many of these files mis-identify as ASNUM files
-	       @database_type == Edition::USERTYPE_V6 ||
+               @database_type == Edition::REGISTRAR ||
+               @database_type == Edition::REGISTRAR_V6 ||
+               @database_type == Edition::USERTYPE ||     # Many of these files mis-identify as ASNUM files
+               @database_type == Edition::USERTYPE_V6 ||
                @database_type == Edition::DOMAIN ||
                @database_type == Edition::DOMAIN_V6 ||
                @database_type == Edition::ASNUM ||
                @database_type == Edition::ASNUM_V6 ||
-	       @database_type == Edition::NETSPEED_REV1 ||
-	       @database_type == Edition::NETSPEED_REV1_V6 ||
-	       @database_type == Edition::LOCATIONA ||
-	       # @database_type == Edition::LOCATIONA_V6 ||
-	       @database_type == Edition::ACCURACYRADIUS ||
-	       @database_type == Edition::ACCURACYRADIUS_V6 ||
+               @database_type == Edition::NETSPEED_REV1 ||
+               @database_type == Edition::NETSPEED_REV1_V6 ||
+               @database_type == Edition::LOCATIONA ||
+               # @database_type == Edition::LOCATIONA_V6 ||
+               @database_type == Edition::ACCURACYRADIUS ||
+               @database_type == Edition::ACCURACYRADIUS_V6 ||
                @database_type == Edition::CITYCONF ||
                @database_type == Edition::COUNTRYCONF ||
                @database_type == Edition::REGIONCONF ||
@@ -595,46 +595,46 @@ class GeoIP
 
         end
 
-	case @database_type
-	when Edition::COUNTRY
-	when Edition::NETSPEED_REV1
-	when Edition::ASNUM
-	when Edition::CITY_REV0
-	when Edition::CITY_REV1
-	when Edition::REGION_REV0
-	when Edition::REGION_REV1
-	  @ip_bits = 32
-	  @record_length = 3
+        case @database_type
+        when Edition::COUNTRY
+        when Edition::NETSPEED_REV1
+        when Edition::ASNUM
+        when Edition::CITY_REV0
+        when Edition::CITY_REV1
+        when Edition::REGION_REV0
+        when Edition::REGION_REV1
+          @ip_bits = 32
+          @record_length = 3
 
-	when Edition::ORG,
-	    Edition::DOMAIN,
-	    Edition::ISP
-	  @ip_bits = 32
-	  @record_length = 4
+        when Edition::ORG,
+            Edition::DOMAIN,
+            Edition::ISP
+          @ip_bits = 32
+          @record_length = 4
 
-	when Edition::ASNUM_V6,
-	    Edition::CITY_REV0_V6,
-	    Edition::CITY_REV1_V6,
-	    Edition::NETSPEED_REV1_V6,
-	    Edition::COUNTRY_V6,
-	    Edition::PROXY
-	  @ip_bits = 128
-	  @record_length = 3
+        when Edition::ASNUM_V6,
+            Edition::CITY_REV0_V6,
+            Edition::CITY_REV1_V6,
+            Edition::NETSPEED_REV1_V6,
+            Edition::COUNTRY_V6,
+            Edition::PROXY
+          @ip_bits = 128
+          @record_length = 3
 
-	when Edition::ACCURACYRADIUS_V6,
-	    Edition::DOMAIN_V6,
-	    Edition::ISP_V6,
-	    Edition::LARGE_COUNTRY_V6,
-	    Edition::LOCATIONA_V6,
-	    Edition::ORG_V6,
-	    Edition::REGISTRAR_V6,
-	    Edition::USERTYPE_V6
-	  @ip_bits = 128
-	  @record_length = 4
+        when Edition::ACCURACYRADIUS_V6,
+            Edition::DOMAIN_V6,
+            Edition::ISP_V6,
+            Edition::LARGE_COUNTRY_V6,
+            Edition::LOCATIONA_V6,
+            Edition::ORG_V6,
+            Edition::REGISTRAR_V6,
+            Edition::USERTYPE_V6
+          @ip_bits = 128
+          @record_length = 4
 
-	else
-	  raise "unimplemented database type"
-	end
+        else
+          raise "unimplemented database type"
+        end
 
         break
       else
@@ -698,7 +698,7 @@ class GeoIP
       CountryCode3[code],         # ISO3166-2 alpha-3 code
       CountryName[code],          # Country name, per ISO 3166
       CountryContinent[code],     # Continent code.
-      region_code,		  # Unfortunately this is called region_name in the City structure
+      region_code,                # Unfortunately this is called region_name in the City structure
       lookup_region_name(CountryCode[code], region_code),
       (TimeZone["#{CountryCode[code]}#{region_code}"] || TimeZone["#{CountryCode[code]}"])
     )
