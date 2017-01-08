@@ -20,7 +20,7 @@ and the city, ISP and other information, if you have that database version.}
   # and development dependencies are only needed for development (ie running rake tasks, tests, etc)
   #  gem.add_runtime_dependency 'jabber4r', '> 0.1'
   #  gem.add_development_dependency 'rspec', '> 1.2.3'
-  gem.files.exclude "website/**/*.*", "script/*", "config/*"
+  gem.files.exclude "Rakefile", "website/**/*.*", "script/*", "config/*"
 end
 Jeweler::RubygemsDotOrgTasks.new
 

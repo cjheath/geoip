@@ -23,7 +23,6 @@ Gem::Specification.new do |s|
     "History.rdoc",
     "LICENSE",
     "README.rdoc",
-    "Rakefile",
     "bin/geoip",
     "data/geoip/country_code.yml",
     "data/geoip/country_code3.yml",
