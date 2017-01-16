@@ -40,7 +40,7 @@ Gem::Specification.new do |s|
     "test/test_helper.rb"
   ]
   s.homepage = "http://github.com/cjheath/geoip"
-  s.licenses = ["LGPL"]
+  s.licenses = ["LGPL-2.1"]
   s.rubygems_version = "2.4.5"
   s.summary = "GeoIP searches a GeoIP database for a given host or IP address, and returns information about the country where the IP address is allocated, and the city, ISP and other information, if you have that database version."
 end
