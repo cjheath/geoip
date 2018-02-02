@@ -884,7 +884,7 @@ class GeoIP
     @ip_bits.downto(1) do |depth|
       go_right = (ipnum & mask) != 0
       off = @record_length * (2 * offset + (go_right ? 1 : 0))
-      offset = le_to_ui(r2 = atomic_read(@record_length, off).unpack('C*'))
+      offset = le_to_ui(atomic_read(@record_length, off).unpack('C*'))
 
       return offset if offset >= @database_segments[0]
       mask >>= 1
