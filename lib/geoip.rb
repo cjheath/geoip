@@ -734,6 +734,7 @@ class GeoIP
   def read_isp offset
     record = atomic_read(MAX_ORG_RECORD_LENGTH, index_size+offset)
     record = record.sub(/\000.*/n, '')
+    record = record.force_encoding('iso-8859-1').encode('utf-8') if record.respond_to?(:force_encoding)
     record.start_with?('*') ? nil : ISP.new(record)
   end
 
