@@ -77,15 +77,13 @@ external IP address to the attribute local_ip_alias:
 
 == REQUIREMENTS:
 
-You need one of the free GeoLite country, city or ASN databases, or a subscription database version.
-The last known download locations for the GeoLite database versions are
-<http://geolite.maxmind.com/download/geoip/database/GeoLiteCountry/GeoIP.dat.gz>,
-<http://geolite.maxmind.com/download/geoip/database/GeoLiteCity.dat.gz>,
-<http://geolite.maxmind.com/download/geoip/database/asnum/GeoIPASNum.dat.gz>.
+You need one of the free GeoLite2 country, city or ASN binary databases, or a subscription database version.
+Maxmind have stopped supplying databases in the original GeoLite format - only v2 is currently available.
+The download location for the GeoLite databases is <https://dev.maxmind.com/geoip/geoip2/geolite2/>.
 
-This API requires the file to be decompressed for searching. Other versions
-of this database are available for purchase which contain more detailed
-information, but this information is not returned by this implementation.
+This API requires the gzipped binary file to be decompressed for searching.
+Other versions of this database are available for purchase which contain more
+detailed information, but not all this information is returned by this implementation.
 See www.maxmind.com for more information.
 
 == INSTALL:
