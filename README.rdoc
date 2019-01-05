@@ -77,11 +77,12 @@ external IP address to the attribute local_ip_alias:
 
 == REQUIREMENTS:
 
-You need one of the free GeoLite2 country, city or ASN binary databases, or a subscription database version.
-Maxmind have stopped supplying databases in the original GeoLite format - only v2 is currently available.
-The download location for the GeoLite databases is <https://dev.maxmind.com/geoip/geoip2/geolite2/>.
+You need one of the free GeoLite country, city or ASN binary databases, or a subscription database version.
+Maxmind have unfortunately stopped updating databases in the original GeoLite format - only v2 is currently available, and the CSV form.
+There is no available compiler from CSV to the legacy database format, so this gem has started to go stale and needs a path forwards. Any volunteers?
+The download location for the GeoLite2 databases is <https://dev.maxmind.com/geoip/geoip2/geolite2/>.
 
-This API requires the gzipped binary file to be decompressed for searching.
+This API requires a gzipped binary file to be decompressed for searching.
 Other versions of this database are available for purchase which contain more
 detailed information, but not all this information is returned by this implementation.
 See www.maxmind.com for more information.
