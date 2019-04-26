@@ -535,10 +535,10 @@ class GeoIP
     end
   end
 
-  # Loads data into a StringIO which is Copy-on-write friendly
+  # Loads data into an in-memory frozen string which is Copy-on-write friendly
   def preload_data
     @file.seek(0)
-    @contents = StringIO.new(@file.read)
+    @contents = @file.read.freeze
     @file.close
   end
 
@@ -914,22 +914,21 @@ class GeoIP
   # access (only providing protection against multiple threads, but not
   # file descriptors shared across multiple processes).
   # If the contents of the database have been preloaded it'll work with
-  # the StringIO object directly.
+  # the frozen string object directly.
   def atomic_read(length, pos) #:nodoc:
-    if @mutex
-      @mutex.synchronize { atomic_read_unguarded(length, pos) }
+    if @contents
+      @contents.byteslice(pos, length) || ''
+    elsif @use_pread
+      IO.pread(@file.fileno, length, pos)
+    elsif @mutex
+      @mutex.synchronize { read_unguarded(length, pos) }
     else
-      atomic_read_unguarded(length, pos)
+      read_unguarded(length, pos)
     end
   end
 
-  def atomic_read_unguarded(length, pos)
-    if @use_pread
-      IO.pread(@file.fileno, length, pos)
-    else
-      io = @contents || @file
-      io.seek(pos)
-      io.read(length)
-    end
+  def read_unguarded(length, pos)
+    @file.seek(pos)
+    @file.read(length)
   end
 end
